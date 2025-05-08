@@ -43,8 +43,26 @@
       margin-top: 10px;
       border-radius: 8px;
     }
-    .editBtn, .deleteBtn, .likeBtn, .dislikeBtn, .replyBtn {
-      margin-left: 5px;
+    .reaction-buttons {
+      margin-top: 8px;
+    }
+    .reply-section {
+      margin-top: 12px;
+      background-color: #333;
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .reply-btn {
+      margin-top: 10px;
+    }
+    .reply-input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 8px;
+      background-color: #121212;
+      color: white;
+      border: 2px solid #444;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -59,7 +77,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, query, orderBy, doc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
@@ -100,60 +118,64 @@
       postsContainer.innerHTML = "";
       snapshot.forEach((doc) => {
         const data = doc.data();
+        const postId = doc.id; // Get the post ID
         const div = document.createElement("div");
         div.className = "post";
-        const postId = doc.id; // Get the post ID
         const imgMatch = data.content.match(/https?:\/\/i\.imgur\.com\/\S+\.(jpg|png|gif|jpeg)/i);
         div.innerHTML = `
           <strong>${data.name}</strong><br/>
           <p>${data.content}</p>
           ${imgMatch ? `<img src="${imgMatch[0]}" alt="Posted image">` : ""}
+          <div class="reaction-buttons">
+            <button class="likeBtn">Like (${data.likes})</button>
+            <button class="dislikeBtn">Dislike (${data.dislikes})</button>
+          </div>
+          <button class="replyBtn">Reply</button>
+          <div class="reply-section">
+            <input class="reply-input" placeholder="Write a reply..." />
+            <button class="sendReplyBtn">Send Reply</button>
+          </div>
           <button class="editBtn">Edit</button>
           <button class="deleteBtn">Delete</button>
         `;
-
-        // Like button functionality
-        const likeBtn = document.createElement("button");
-        likeBtn.className = "likeBtn";
-        likeBtn.innerText = `Like (${data.likes || 0})`;
-        div.appendChild(likeBtn);
-
+        
+        // Like Button
+        const likeBtn = div.querySelector(".likeBtn");
         likeBtn.addEventListener("click", async () => {
           await updateDoc(doc(db, "posts", postId), {
-            likes: (data.likes || 0) + 1
+            likes: data.likes + 1
           });
         });
 
-        // Dislike button functionality
-        const dislikeBtn = document.createElement("button");
-        dislikeBtn.className = "dislikeBtn";
-        dislikeBtn.innerText = `Dislike (${data.dislikes || 0})`;
-        div.appendChild(dislikeBtn);
-
+        // Dislike Button
+        const dislikeBtn = div.querySelector(".dislikeBtn");
         dislikeBtn.addEventListener("click", async () => {
           await updateDoc(doc(db, "posts", postId), {
-            dislikes: (data.dislikes || 0) + 1
+            dislikes: data.dislikes + 1
           });
         });
 
-        // Reply button functionality
-        const replyBtn = document.createElement("button");
-        replyBtn.className = "replyBtn";
-        replyBtn.innerText = `Reply`;
-        div.appendChild(replyBtn);
-
+        // Reply Button
+        const replyBtn = div.querySelector(".replyBtn");
         replyBtn.addEventListener("click", () => {
-          const replyText = prompt("Enter your reply:");
-          if (replyText) {
-            // Add reply to post
-            const updatedReplies = [...(data.replies || []), replyText];
+          const replyInput = div.querySelector(".reply-input");
+          const replyContent = replyInput.value.trim();
+          if (replyContent) {
+            const newReply = {
+              name: "User", // You can replace this with actual user name
+              content: replyContent,
+            };
+
+            // Add reply to Firestore post document
             updateDoc(doc(db, "posts", postId), {
-              replies: updatedReplies
+              replies: [...data.replies, newReply]
             });
+
+            replyInput.value = ""; // Clear input after reply
           }
         });
 
-        // Edit button functionality
+        // Edit Button
         const editBtn = div.querySelector(".editBtn");
         editBtn.addEventListener("click", async () => {
           const newContent = prompt("Edit your post:", data.content);
@@ -164,30 +186,10 @@
           }
         });
 
-        // Delete button functionality without the confirm "website.com says"
+        // Delete Button
         const deleteBtn = div.querySelector(".deleteBtn");
         deleteBtn.addEventListener("click", async () => {
-          // Create a custom confirmation with Yes/No
-          const confirmationDiv = document.createElement("div");
-          confirmationDiv.className = "confirmation-dialog";
-          confirmationDiv.innerHTML = `
-            <p>Are you sure you want to delete this post?</p>
-            <button class="yesBtn">Yes</button>
-            <button class="noBtn">No</button>
-          `;
-          div.appendChild(confirmationDiv);
-
-          const yesBtn = confirmationDiv.querySelector(".yesBtn");
-          const noBtn = confirmationDiv.querySelector(".noBtn");
-
-          yesBtn.addEventListener("click", async () => {
-            await deleteDoc(doc(db, "posts", postId));
-            confirmationDiv.remove();
-          });
-
-          noBtn.addEventListener("click", () => {
-            confirmationDiv.remove();
-          });
+          await deleteDoc(doc(db, "posts", postId));
         });
 
         postsContainer.appendChild(div);
