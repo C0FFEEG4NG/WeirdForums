@@ -10,38 +10,36 @@
       color: #fff;
       padding: 20px;
     }
-    h1 {
-      font-size: 2em;
-      margin-bottom: 10px;
-    }
     .description {
-      font-size: 1.1em;
-      margin-bottom: 20px;
       color: #ccc;
-    }
-    #postForm {
       margin-bottom: 20px;
     }
     input, button {
-      padding: 10px;
-      margin: 5px 0;
+      padding: 8px;
       font-family: inherit;
-      font-size: 1em;
+      margin: 4px;
     }
-    #postList > div {
+    .post {
       background: #222;
-      margin: 10px 0;
-      padding: 10px;
       border-left: 4px solid #4af;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    .reply {
+      margin-left: 20px;
+      background: #333;
+      padding: 6px;
+      margin-top: 6px;
     }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Shadows+Into+Light&display=swap" rel="stylesheet">
 </head>
 <body>
   <h1>WeirdForums</h1>
-  <div class="description">still broken ;-;</div>
+  <div class="description">A strange place to post your thoughts.</div>
 
   <form id="postForm">
+    <input id="author" type="text" placeholder="Your name" required />
     <input id="content" type="text" placeholder="Say something weird..." required />
     <button type="submit">Post</button>
   </form>
@@ -50,7 +48,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, increment, onSnapshot, serverTimestamp, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
@@ -63,33 +61,64 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    const postList = document.getElementById("postList");
-    const postForm = document.getElementById("postForm");
-    const contentInput = document.getElementById("content");
-
     const postsRef = collection(db, "posts");
-    const q = query(postsRef, orderBy("timestamp", "desc"));
+    const postList = document.getElementById("postList");
 
+    const q = query(postsRef, orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
       postList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const data = doc.data();
+      snapshot.forEach(async docSnap => {
+        const data = docSnap.data();
         const div = document.createElement("div");
-        div.textContent = `${data.author || 'Guest'}: ${data.content}`;
+        div.className = "post";
+        div.innerHTML = `<strong>${data.author}</strong>: ${data.content}<br>
+          <button class="likeBtn">Like (${data.likes || 0})</button>
+          <button class="replyBtn">Reply</button>
+          <button class="deleteBtn">Delete</button>
+          <div class="replies">${(data.replies || []).map(r => `<div class="reply"><strong>${r.name}:</strong> ${r.text}</div>`).join('')}</div>`;
+
+        // Like button
+        div.querySelector(".likeBtn").addEventListener("click", async () => {
+          const postDoc = doc(db, "posts", docSnap.id);
+          const current = (await getDoc(postDoc)).data();
+          const newLikes = (current.likes || 0) + 1;
+          await updateDoc(postDoc, { likes: newLikes });
+        });
+
+        // Reply button
+        div.querySelector(".replyBtn").addEventListener("click", async () => {
+          const name = prompt("Your name:");
+          const replyText = prompt("Reply:");
+          if (!name || !replyText) return;
+          const postDoc = doc(db, "posts", docSnap.id);
+          const current = (await getDoc(postDoc)).data();
+          const newReplies = [...(current.replies || []), { name, text: replyText }];
+          await updateDoc(postDoc, { replies: newReplies });
+        });
+
+        // Delete button
+        div.querySelector(".deleteBtn").addEventListener("click", async () => {
+          if (confirm("Delete this post?")) {
+            await deleteDoc(doc(db, "posts", docSnap.id));
+          }
+        });
+
         postList.appendChild(div);
       });
     });
 
-    postForm.addEventListener("submit", async (e) => {
+    document.getElementById("postForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const content = contentInput.value;
+      const content = document.getElementById("content").value;
+      const author = document.getElementById("author").value;
       await addDoc(postsRef, {
-        author: "Guest",
         content,
-        timestamp: serverTimestamp()
+        author,
+        timestamp: serverTimestamp(),
+        likes: 0,
+        replies: []
       });
-      contentInput.value = "";
+      document.getElementById("content").value = "";
     });
   </script>
 </body>
