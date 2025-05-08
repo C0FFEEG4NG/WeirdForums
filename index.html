@@ -28,6 +28,10 @@
       color: white;
       cursor: pointer;
     }
+    .like-dislike {
+      display: flex;
+      gap: 10px;
+    }
     input, textarea {
       font-family: inherit;
       width: 100%;
@@ -43,6 +47,15 @@
       margin-top: 10px;
       border-radius: 8px;
     }
+    .reply-form {
+      margin-top: 10px;
+    }
+    .reply {
+      background: #3a3a3a;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -56,16 +69,16 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
-  authDomain: "weirdforums-f8a45.firebaseapp.com",
-  projectId: "weirdforums-f8a45",
-  storageBucket: "weirdforums-f8a45.firebasestorage.app",
-  messagingSenderId: "816710038730",
-  appId: "1:816710038730:web:4a4de7f70c8813d162b033",
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
+      authDomain: "weirdforums-f8a45.firebaseapp.com",
+      projectId: "weirdforums-f8a45",
+      storageBucket: "weirdforums-f8a45.firebasestorage.app",
+      messagingSenderId: "816710038730",
+      appId: "1:816710038730:web:4a4de7f70c8813d162b033",
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -84,7 +97,10 @@ const firebaseConfig = {
       await addDoc(postsCol, {
         name,
         content,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        likes: 0,
+        dislikes: 0,
+        replies: [],
       });
 
       form.reset();
@@ -97,12 +113,54 @@ const firebaseConfig = {
         const div = document.createElement("div");
         div.className = "post";
         const imgMatch = data.content.match(/https?:\/\/i\.imgur\.com\/\S+\.(jpg|png|gif|jpeg)/i);
+
         div.innerHTML = `
           <strong>${data.name}</strong><br/>
           <p>${data.content}</p>
           ${imgMatch ? `<img src="${imgMatch[0]}" alt="Posted image">` : ""}
+          <div class="like-dislike">
+            <button class="like-btn" data-id="${doc.id}">Like (${data.likes})</button>
+            <button class="dislike-btn" data-id="${doc.id}">Dislike (${data.dislikes})</button>
+          </div>
+          <div class="reply-form">
+            <input type="text" placeholder="Write a reply..." id="replyInput-${doc.id}" />
+            <button class="reply-btn" data-id="${doc.id}">Reply</button>
+          </div>
+          <div id="replies-${doc.id}">
+            ${data.replies.map(reply => `<div class="reply">${reply}</div>`).join('')}
+          </div>
         `;
+        
         postsContainer.appendChild(div);
+      });
+
+      document.querySelectorAll('.like-btn').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const postId = e.target.getAttribute('data-id');
+          const postRef = doc(db, "posts", postId);
+          await updateDoc(postRef, { likes: firebase.firestore.FieldValue.increment(1) });
+        });
+      });
+
+      document.querySelectorAll('.dislike-btn').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const postId = e.target.getAttribute('data-id');
+          const postRef = doc(db, "posts", postId);
+          await updateDoc(postRef, { dislikes: firebase.firestore.FieldValue.increment(1) });
+        });
+      });
+
+      document.querySelectorAll('.reply-btn').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const postId = e.target.getAttribute('data-id');
+          const replyInput = document.getElementById(`replyInput-${postId}`);
+          const replyText = replyInput.value.trim();
+          if (!replyText) return;
+
+          const postRef = doc(db, "posts", postId);
+          await updateDoc(postRef, { replies: arrayUnion(replyText) });
+          replyInput.value = '';
+        });
       });
     });
   </script>
