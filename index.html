@@ -4,164 +4,84 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WeirdForums</title>
+  <link rel="icon" href="Sprite-0001.jpeg" type="image/jpeg">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
   <style>
     body {
-      font-family: 'Press Start 2P', cursive;
       background-color: #1c1c1c;
       color: white;
+      font-family: 'Press Start 2P', monospace;
       text-align: center;
-      padding: 20px;
     }
     .post {
       background-color: #2a2a2a;
-      padding: 20px;
-      margin: 20px auto;
       border-radius: 10px;
-      max-width: 700px;
+      padding: 20px;
+      margin: 20px;
     }
-    .btn {
+    .post h3 {
+      margin-top: 0;
+    }
+    .post-image {
+      max-width: 100%;
+      height: auto;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+    .post-actions button {
       background-color: #4CAF50;
       color: white;
       border: none;
-      padding: 10px;
+      padding: 10px 20px;
       margin: 5px;
-      border-radius: 5px;
-      font-family: 'Press Start 2P', cursive;
+      font-family: 'Press Start 2P', monospace;
       cursor: pointer;
-    }
-    input, textarea {
-      width: 90%;
-      padding: 10px;
-      margin: 10px auto;
-      display: block;
       border-radius: 5px;
-      font-family: 'Press Start 2P', cursive;
-    }
-    img {
-      max-width: 100%;
-      margin-top: 10px;
     }
   </style>
-  <link rel="icon" type="image/jpeg" href="/Sprite-0001.jpeg" />
 </head>
 <body>
   <h1>WeirdForums</h1>
-
-  <div id="posts"></div>
-
-  <input type="text" id="nameInput" placeholder="Enter your name" />
-  <textarea id="postInput" placeholder="Write your post..."></textarea>
-  <input type="file" id="imageInput" />
-  <button class="btn" onclick="createPost()">Post</button>
+  <div id="forum"></div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
-      authDomain: "weirdforums-f8a45.firebaseapp.com",
-      projectId: "weirdforums-f8a45",
-      storageBucket: "weirdforums-f8a45.appspot.com",
-      messagingSenderId: "816710038730",
-      appId: "1:816710038730:web:4a4de7f70c8813d162b033"
-    };
+    const posts = [
+      { author: "Coffee", content: "https://i.imgur.com/z4d4kWk.jpeg" },
+      { author: "Tea Queen baddie", content: "I'm such a baddie" },
+      { author: "✦Leon✦", content: "Bap" }
+    ];
 
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-
-    async function uploadImage(file) {
-      const ref = storage.ref('images/' + file.name);
-      await ref.put(file);
-      return ref.getDownloadURL();
-    }
-
-    async function createPost() {
-      const name = document.getElementById("nameInput").value;
-      const text = document.getElementById("postInput").value;
-      const file = document.getElementById("imageInput").files[0];
-
-      let imageUrl = "";
-      if (file) {
-        imageUrl = await uploadImage(file);
+    function renderPostContent(content) {
+      const imgurRegex = /https?:\/\/i\.imgur\.com\/\S+\.(jpg|jpeg|png|gif|webp)/i;
+      if (imgurRegex.test(content)) {
+        return `<img src="${content}" alt="user image" class="post-image">`;
+      } else {
+        return `<p>${content}</p>`;
       }
-
-      await db.collection("posts").add({
-        name,
-        text,
-        imageUrl,
-        likes: 0,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-
-      document.getElementById("nameInput").value = "";
-      document.getElementById("postInput").value = "";
-      document.getElementById("imageInput").value = "";
     }
 
-    db.collection("posts").orderBy("timestamp", "desc").onSnapshot(snapshot => {
-      const postsContainer = document.getElementById("posts");
-      postsContainer.innerHTML = "";
-      snapshot.forEach(doc => {
-        const post = doc.data();
-        const postElement = document.createElement("div");
-        postElement.className = "post";
-
-        const nameEl = document.createElement("h2");
-        nameEl.textContent = post.name;
-
-        const textEl = document.createElement("p");
-        textEl.textContent = post.text;
-
-        postElement.appendChild(nameEl);
-        postElement.appendChild(textEl);
-
-        if (post.imageUrl) {
-          const img = document.createElement("img");
-          img.src = post.imageUrl;
-          img.alt = "Attached Image";
-          postElement.appendChild(img);
-        }
-
-        const likeBtn = document.createElement("button");
-        likeBtn.className = "btn";
-        likeBtn.textContent = `Like (${post.likes})`;
-        likeBtn.onclick = () => {
-          db.collection("posts").doc(doc.id).update({ likes: post.likes + 1 });
-        };
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "btn";
-        deleteBtn.textContent = "Delete";
-        deleteBtn.onclick = () => {
-          db.collection("posts").doc(doc.id).delete();
-        };
-
-        const replyBtn = document.createElement("button");
-        replyBtn.className = "btn";
-        replyBtn.textContent = "Reply";
-        replyBtn.onclick = () => {
-          const reply = prompt("Write your reply:");
-          if (reply) {
-            db.collection("posts").add({
-              name: post.name + " (reply)",
-              text: reply,
-              imageUrl: "",
-              likes: 0,
-              timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            });
-          }
-        };
-
-        postElement.appendChild(likeBtn);
-        postElement.appendChild(deleteBtn);
-        postElement.appendChild(replyBtn);
-
-        postsContainer.appendChild(postElement);
+    function renderPosts() {
+      const forum = document.getElementById('forum');
+      forum.innerHTML = '';
+      posts.forEach(post => {
+        const div = document.createElement('div');
+        div.className = 'post';
+        div.innerHTML = `
+          <h3>${post.author}</h3>
+          <div class="post-content">
+            ${renderPostContent(post.content)}
+          </div>
+          <div class="post-actions">
+            <button>Like</button>
+            <button>Delete</button>
+            <button>Reply</button>
+          </div>
+        `;
+        forum.appendChild(div);
       });
-    });
+    }
+
+    renderPosts();
   </script>
 </body>
 </html>
