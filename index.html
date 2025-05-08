@@ -131,10 +131,11 @@
         // Handle likes
         likeBtn.addEventListener("click", async () => {
           const likes = data.likes;
-          if (likes.includes(data.name)) {
-            likes.splice(likes.indexOf(data.name), 1); // Remove like
+          const currentUser = "userName"; // Replace this with actual user name or session variable if needed
+          if (likes.includes(currentUser)) {
+            likes.splice(likes.indexOf(currentUser), 1); // Remove like
           } else {
-            likes.push(data.name); // Add like
+            likes.push(currentUser); // Add like
           }
           await updateDoc(doc(db, "posts", postId), { likes });
         });
@@ -142,10 +143,11 @@
         // Handle dislikes
         dislikeBtn.addEventListener("click", async () => {
           const dislikes = data.dislikes;
-          if (dislikes.includes(data.name)) {
-            dislikes.splice(dislikes.indexOf(data.name), 1); // Remove dislike
+          const currentUser = "userName"; // Replace this with actual user name or session variable if needed
+          if (dislikes.includes(currentUser)) {
+            dislikes.splice(dislikes.indexOf(currentUser), 1); // Remove dislike
           } else {
-            dislikes.push(data.name); // Add dislike
+            dislikes.push(currentUser); // Add dislike
           }
           await updateDoc(doc(db, "posts", postId), { dislikes });
         });
