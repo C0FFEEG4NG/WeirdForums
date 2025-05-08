@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WeirdForums</title>
   <link href="https://fonts.googleapis.com/css2?family=Shadows+Into+The+Light&display=swap" rel="stylesheet">
   <style>
@@ -64,25 +64,6 @@
       display: none;
       flex-direction: column;
     }
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-    .modal-box {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-    }
-    .modal-box button {
-      margin: 5px;
-    }
   </style>
 </head>
 <body>
@@ -102,163 +83,120 @@
     <button type="submit">Post</button>
   </form>
 
-  <!-- Firebase App (the core Firebase SDK) -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <!-- Add Firebase products that you want to use -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-
   <script>
-    // TODO: Replace the following with your app's Firebase project configuration
-    const firebaseConfig = {
-      // Your Firebase config here
-    };
-
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
     const postForm = document.getElementById('postForm');
     const postsContainer = document.getElementById('posts-container');
 
-    function showConfirmBox(message, onYes, onNo) {
-      const overlay = document.createElement("div");
-      overlay.className = "modal-overlay";
+    // Function to fetch posts from Firebase and render them
+    onSnapshot(query(postsCol, orderBy("createdAt", "desc")), (snapshot) => {
+      postsContainer.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "post";
+        const postId = doc.id; // Get the post ID
+        const imgMatch = data.content.match(/https?:\/\/i\.imgur\.com\/\S+\.(jpg|png|gif|jpeg)/i);
+        div.innerHTML = `
+          <strong>${data.name}</strong><br/>
+          <p>${data.content}</p>
+          ${imgMatch ? `<img src="${imgMatch[0]}" alt="Posted image">` : ""}
+          <div class="post-actions">
+            <button class="likeBtn">Like (${data.likes || 0})</button>
+            <button class="dislikeBtn">Dislike (${data.dislikes || 0})</button>
+            <button class="replyBtn">Reply</button>
+            <button class="deleteBtn">Delete</button>
+          </div>
+          <div class="replies">
+            ${data.replies ? data.replies.map(reply => `<p><strong>${reply.name}:</strong> ${reply.message}</p>`).join('') : ''}
+          </div>
+          <div class="reply-box">
+            <input type="text" class="reply-input" placeholder="Your reply..." />
+            <button class="submitReplyBtn">Submit Reply</button>
+          </div>
+        `;
+        postsContainer.appendChild(div);
 
-      const box = document.createElement("div");
-      box.className = "modal-box";
-      box.innerHTML = `<p>${message}</p>`;
+        // Handling Like/Dislike buttons
+        div.querySelector('.likeBtn').addEventListener("click", async () => {
+          const postRef = doc(db, "posts", postId);
+          const postData = await getDoc(postRef);
+          const post = postData.data();
+          const newLikes = post.hasLiked ? post.likes - 1 : post.likes + 1;
+          const newHasLiked = !post.hasLiked;
 
-      const yesBtn = document.createElement("button");
-      yesBtn.textContent = "Yes";
-      yesBtn.onclick = () => {
-        document.body.removeChild(overlay);
-        onYes();
-      };
-
-      const noBtn = document.createElement("button");
-      noBtn.textContent = "No";
-      noBtn.onclick = () => {
-        document.body.removeChild(overlay);
-        if (onNo) onNo();
-      };
-
-      box.appendChild(yesBtn);
-      box.appendChild(noBtn);
-      overlay.appendChild(box);
-      document.body.appendChild(overlay);
-    }
-
-    function fetchPosts() {
-      db.collection("posts").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
-        postsContainer.innerHTML = "";
-        snapshot.forEach((doc) => {
-          const post = doc.data();
-          const postId = doc.id;
-
-          const postDiv = document.createElement("div");
-          postDiv.className = "post";
-          postDiv.innerHTML = `
-            <strong>${post.name}</strong>
-            <p>${post.message}</p>
-            <div class="post-actions">
-              <button class="replyBtn">Reply</button>
-              <button class="likeBtn">Like (${post.likes || 0})</button>
-              <button class="dislikeBtn">Dislike (${post.dislikes || 0})</button>
-              <button class="editBtn">Edit</button>
-              <button class="deleteBtn">Delete</button>
-            </div>
-            <div class="reply-box">
-              <input type="text" placeholder="Your reply..." class="reply-input" />
-              <button class="submitReplyBtn">Submit Reply</button>
-            </div>
-            <div class="replies">
-              ${(post.replies || []).map(reply => `<p><strong>${reply.name}:</strong> ${reply.message}</p>`).join('')}
-            </div>
-          `;
-
-          // Like button
-          postDiv.querySelector(".likeBtn").addEventListener("click", () => {
-            db.collection("posts").doc(postId).update({
-              likes: firebase.firestore.FieldValue.increment(1)
-            });
+          await updateDoc(postRef, {
+            likes: newLikes,
+            hasLiked: newHasLiked
           });
+        });
 
-          // Dislike button
-          postDiv.querySelector(".dislikeBtn").addEventListener("click", () => {
-            db.collection("posts").doc(postId).update({
-              dislikes: firebase.firestore.FieldValue.increment(1)
-            });
+        div.querySelector('.dislikeBtn').addEventListener("click", async () => {
+          const postRef = doc(db, "posts", postId);
+          const postData = await getDoc(postRef);
+          const post = postData.data();
+          const newDislikes = post.hasDisliked ? post.dislikes - 1 : post.dislikes + 1;
+          const newHasDisliked = !post.hasDisliked;
+
+          await updateDoc(postRef, {
+            dislikes: newDislikes,
+            hasDisliked: newHasDisliked
           });
+        });
 
-          // Reply button
-          postDiv.querySelector(".replyBtn").addEventListener("click", () => {
-            const replyBox = postDiv.querySelector(".reply-box");
-            replyBox.style.display = replyBox.style.display === "none" || replyBox.style.display === "" ? "flex" : "none";
-          });
+        div.querySelector('.deleteBtn').addEventListener("click", async () => {
+          const postRef = doc(db, "posts", postId);
+          await deleteDoc(postRef);
+        });
 
-          // Submit reply
-          postDiv.querySelector(".submitReplyBtn").addEventListener("click", () => {
-            const replyInput = postDiv.querySelector(".reply-input");
-            const replyMessage = replyInput.value.trim();
-            if (!replyMessage) return;
+        // Handle Reply button
+        div.querySelector('.replyBtn').addEventListener("click", () => {
+          const replyBox = div.querySelector('.reply-box');
+          replyBox.style.display = replyBox.style.display === 'none' || replyBox.style.display === '' ? 'flex' : 'none';
+        });
 
-            const name = document.getElementById('username').value || 'Anonymous';
-            const newReply = { name, message: replyMessage };
+        div.querySelector('.submitReplyBtn').addEventListener("click", async () => {
+          const replyInput = div.querySelector('.reply-input');
+          const replyMessage = replyInput.value;
+          if (!replyMessage) return;
 
-            db.collection("posts").doc(postId).update({
-              replies: firebase.firestore.FieldValue.arrayUnion(newReply)
-            });
+          const name = document.getElementById('username').value || 'Anonymous';
+          const postRef = doc(db, "posts", postId);
+          const postData = await getDoc(postRef);
+          const replies = postData.data().replies || [];
 
-            replyInput.value = "";
-          });
+          replies.push({ name, message: replyMessage });
 
-          // Edit button
-          postDiv.querySelector(".editBtn").addEventListener("click", () => {
-            const newMessage = prompt("Edit your message:", post.message);
-            if (newMessage !== null) {
-              db.collection("posts").doc(postId).update({
-                message: newMessage
-              });
-            }
-          });
+          await updateDoc(postRef, { replies });
 
-          // Delete button
-          postDiv.querySelector(".deleteBtn").addEventListener("click", () => {
-            showConfirmBox("Delete this post?", () => {
-              db.collection("posts").doc(postId).delete();
-            });
-          });
-
-          postsContainer.appendChild(postDiv);
+          replyInput.value = '';
         });
       });
-    }
+    });
 
-    postForm.addEventListener('submit', (e) => {
+    postForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const name = document.getElementById('username').value;
       const message = document.getElementById('message').value;
       const description = document.getElementById('description').value;
 
-      const newPost = {
-        name,
-        message,
-        description,
-        likes: 0,
-        dislikes: 0,
-        replies: [],
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      const newPost = { 
+        name, 
+        message, 
+        description, 
+        likes: 0, 
+        dislikes: 0, 
+        hasLiked: false, 
+        hasDisliked: false, 
+        replies: [] 
       };
 
-      db.collection("posts").add(newPost);
+      await addDoc(postsCol, newPost);
 
       document.getElementById('username').value = '';
       document.getElementById('message').value = '';
       document.getElementById('description').value = '';
     });
-
-    fetchPosts();
   </script>
 </body>
 </html>
