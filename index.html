@@ -131,7 +131,7 @@
         // Handle likes
         likeBtn.addEventListener("click", async () => {
           const likes = data.likes;
-          const currentUser = "userName"; // Replace this with actual user name or session variable if needed
+          const currentUser = "userName"; // Replace with real logic for user identification
           if (likes.includes(currentUser)) {
             likes.splice(likes.indexOf(currentUser), 1); // Remove like
           } else {
@@ -143,7 +143,7 @@
         // Handle dislikes
         dislikeBtn.addEventListener("click", async () => {
           const dislikes = data.dislikes;
-          const currentUser = "userName"; // Replace this with actual user name or session variable if needed
+          const currentUser = "userName"; // Replace with real logic for user identification
           if (dislikes.includes(currentUser)) {
             dislikes.splice(dislikes.indexOf(currentUser), 1); // Remove dislike
           } else {
