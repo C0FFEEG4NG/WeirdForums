@@ -1,87 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="Sprite-0001.jpeg" />
   <title>WeirdForums</title>
-  <link rel="icon" href="Sprite-0001.jpeg" type="image/jpeg">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     body {
-      background-color: #1c1c1c;
+      font-family: 'Press Start 2P', cursive;
+      background-color: #1e1e1e;
       color: white;
-      font-family: 'Press Start 2P', monospace;
-      text-align: center;
+      padding: 20px;
     }
     .post {
-      background-color: #2a2a2a;
-      border-radius: 10px;
-      padding: 20px;
-      margin: 20px;
+      background: #2b2b2b;
+      padding: 16px;
+      margin: 12px 0;
+      border-radius: 12px;
     }
-    .post h3 {
-      margin-top: 0;
-    }
-    .post-image {
-      max-width: 100%;
-      height: auto;
-      margin-top: 10px;
-      border-radius: 10px;
-    }
-    .post-actions button {
-      background-color: #4CAF50;
-      color: white;
+    button {
+      font-family: inherit;
+      padding: 6px 10px;
+      margin: 4px;
       border: none;
-      padding: 10px 20px;
-      margin: 5px;
-      font-family: 'Press Start 2P', monospace;
+      border-radius: 8px;
+      background: #4CAF50;
+      color: white;
       cursor: pointer;
-      border-radius: 5px;
+    }
+    input, textarea {
+      font-family: inherit;
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px;
+      background: #121212;
+      color: white;
+      border: 2px solid #444;
+      border-radius: 8px;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
   <h1>WeirdForums</h1>
-  <div id="forum"></div>
+  <form id="postForm">
+    <input id="nameInput" placeholder="Your Name" required />
+    <textarea id="contentInput" placeholder="Say something or paste an Imgur link…" required></textarea>
+    <button type="submit">Post</button>
+  </form>
+  <div id="postsContainer"></div>
 
-  <script>
-    const posts = [
-      { author: "Coffee", content: "https://i.imgur.com/z4d4kWk.jpeg" },
-      { author: "Tea Queen baddie", content: "I'm such a baddie" },
-      { author: "✦Leon✦", content: "Bap" }
-    ];
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-    function renderPostContent(content) {
-      const imgurRegex = /https?:\/\/i\.imgur\.com\/\S+\.(jpg|jpeg|png|gif|webp)/i;
-      if (imgurRegex.test(content)) {
-        return `<img src="${content}" alt="user image" class="post-image">`;
-      } else {
-        return `<p>${content}</p>`;
-      }
-    }
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MSG_ID",
+      appId: "YOUR_APP_ID"
+    };
 
-    function renderPosts() {
-      const forum = document.getElementById('forum');
-      forum.innerHTML = '';
-      posts.forEach(post => {
-        const div = document.createElement('div');
-        div.className = 'post';
-        div.innerHTML = `
-          <h3>${post.author}</h3>
-          <div class="post-content">
-            ${renderPostContent(post.content)}
-          </div>
-          <div class="post-actions">
-            <button>Like</button>
-            <button>Delete</button>
-            <button>Reply</button>
-          </div>
-        `;
-        forum.appendChild(div);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const postsCol = collection(db, "posts");
+
+    const form = document.getElementById("postForm");
+    const postsContainer = document.getElementById("postsContainer");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("nameInput").value.trim();
+      const content = document.getElementById("contentInput").value.trim();
+
+      if (!name || !content) return;
+
+      await addDoc(postsCol, {
+        name,
+        content,
+        createdAt: serverTimestamp()
       });
-    }
 
-    renderPosts();
+      form.reset();
+    });
+
+    onSnapshot(query(postsCol, orderBy("createdAt", "desc")), (snapshot) => {
+      postsContainer.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "post";
+        const imgMatch = data.content.match(/https?:\/\/i\.imgur\.com\/\S+\.(jpg|png|gif|jpeg)/i);
+        div.innerHTML = `
+          <strong>${data.name}</strong><br/>
+          <p>${data.content}</p>
+          ${imgMatch ? `<img src="${imgMatch[0]}" alt="Posted image">` : ""}
+        `;
+        postsContainer.appendChild(div);
+      });
+    });
   </script>
 </body>
 </html>
