@@ -87,7 +87,7 @@
     const postForm = document.getElementById('postForm');
     const postsContainer = document.getElementById('posts-container');
 
-    // Function to fetch posts from Firebase and render them
+    // Fetch posts from Firebase
     onSnapshot(query(postsCol, orderBy("createdAt", "desc")), (snapshot) => {
       postsContainer.innerHTML = "";
       snapshot.forEach((doc) => {
@@ -116,7 +116,7 @@
         `;
         postsContainer.appendChild(div);
 
-        // Handling Like/Dislike buttons
+        // Handle Like button
         div.querySelector('.likeBtn').addEventListener("click", async () => {
           const postRef = doc(db, "posts", postId);
           const postData = await getDoc(postRef);
@@ -130,6 +130,7 @@
           });
         });
 
+        // Handle Dislike button
         div.querySelector('.dislikeBtn').addEventListener("click", async () => {
           const postRef = doc(db, "posts", postId);
           const postData = await getDoc(postRef);
@@ -143,6 +144,7 @@
           });
         });
 
+        // Handle Delete button
         div.querySelector('.deleteBtn').addEventListener("click", async () => {
           const postRef = doc(db, "posts", postId);
           await deleteDoc(postRef);
@@ -154,6 +156,7 @@
           replyBox.style.display = replyBox.style.display === 'none' || replyBox.style.display === '' ? 'flex' : 'none';
         });
 
+        // Handle Submit Reply
         div.querySelector('.submitReplyBtn').addEventListener("click", async () => {
           const replyInput = div.querySelector('.reply-input');
           const replyMessage = replyInput.value;
@@ -173,6 +176,7 @@
       });
     });
 
+    // Handle Post Submission
     postForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
