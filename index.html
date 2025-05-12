@@ -6,6 +6,7 @@
   <title>WeirdForums</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
+    /* your original CSS - untouched 🔥 */
     body {
       font-family: 'Press Start 2P', cursive;
       background-color: #121212;
@@ -83,183 +84,119 @@
   <button type="submit">Post</button>
 </form>
 
-<script type="module">
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+<!-- ✅ Firebase Scripts (add them outside script tags) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
-  authDomain: "weirdforums-f8a45.firebaseapp.com",
-  projectId: "weirdforums-f8a45",
-  storageBucket: "weirdforums-f8a45.firebasestorage.app",
-  messagingSenderId: "816710038730",
-  appId: "1:816710038730:web:4a4de7f70c8813d162b033",
-};
-
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// Post Form and Posts Container
-const postForm = document.getElementById('postForm');
-const postsContainer = document.getElementById('posts-container');
-
-// Handle form submission to add a new post
-postForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const name = document.getElementById('username').value;
-  const message = document.getElementById('message').value;
-  const description = document.getElementById('description').value;
-
-  const newPost = { 
-    name, 
-    message, 
-    description, 
-    likes: 0, 
-    dislikes: 0, 
-    replies: [], 
-    hasLiked: false,
-    hasDisliked: false,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(), // Ensure we have a timestamp for ordering
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
+    authDomain: "weirdforums-f8a45.firebaseapp.com",
+    projectId: "weirdforums-f8a45",
+    storageBucket: "weirdforums-f8a45.appspot.com",
+    messagingSenderId: "816710038730",
+    appId: "1:816710038730:web:4a4de7f70c8813d162b033",
   };
 
-  // Add new post to Firestore
-  const docRef = await db.collection('posts').add(newPost);
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-  // Clear the input fields
-  document.getElementById('username').value = '';
-  document.getElementById('message').value = '';
-  document.getElementById('description').value = '';
-});
+  const postForm = document.getElementById('postForm');
+  const postsContainer = document.getElementById('posts-container');
 
-// Fetch and display posts from Firestore
-function fetchPosts() {
-  const postsCol = db.collection('posts');
-  postsCol.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-    postsContainer.innerHTML = '';
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const postId = doc.id;
-      const div = document.createElement('div');
-      div.className = 'post';
-      const imgMatch = data.message.match(/https?:\/\/i\.imgur\.com\/\S+\.(jpg|png|gif|jpeg)/i);
+  postForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('username').value;
+    const message = document.getElementById('message').value;
+    const description = document.getElementById('description').value;
 
-      div.innerHTML = `
-        <strong>${data.name}</strong><br/>
-        <p>${data.message}</p>
-        ${imgMatch ? `<img src="${imgMatch[0]}" alt="Posted image">` : ''}
-        <button class="deleteBtn">Delete</button>
-        <button class="editBtn">Edit</button>
-        <button class="replyBtn">Reply</button>
-        <button class="likeBtn">${data.likes} Likes</button>
-        <button class="dislikeBtn">${data.dislikes} Dislikes</button>
-        <div class="replies">
-          ${data.replies.map(reply => `<p><strong>${reply.name}:</strong> ${reply.message}</p>`).join('')}
-        </div>
-        <div class="replyBox" style="display: none;">
-          <textarea class="replyInput" placeholder="Your reply..."></textarea>
-          <button class="submitReplyBtn">Submit Reply</button>
-        </div>
-      `;
-      postsContainer.appendChild(div);
+    const newPost = {
+      name,
+      message,
+      description,
+      likes: 0,
+      dislikes: 0,
+      replies: [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
 
-      // Handle Delete
-      div.querySelector('.deleteBtn').addEventListener('click', () => {
-        const confirmationBox = confirmBox("Are you sure you want to delete this post?", () => {
-          db.collection('posts').doc(postId).delete();
-          alert("Post deleted!");
+    await db.collection('posts').add(newPost);
+    postForm.reset();
+  });
+
+  function fetchPosts() {
+    db.collection('posts').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+      postsContainer.innerHTML = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const postId = doc.id;
+        const div = document.createElement('div');
+        div.className = 'post';
+        const imgMatch = data.message.match(/https?:\/\/i\.imgur\.com\/\S+\.(jpg|png|gif|jpeg)/i);
+
+        div.innerHTML = `
+          <strong>${data.name}</strong><br/>
+          <p>${data.message}</p>
+          ${imgMatch ? `<img src="${imgMatch[0]}" alt="Posted image" style="max-width:100%;">` : ''}
+          <button class="deleteBtn">Delete</button>
+          <button class="editBtn">Edit</button>
+          <button class="replyBtn">Reply</button>
+          <button class="likeBtn">${data.likes} Likes</button>
+          <button class="dislikeBtn">${data.dislikes} Dislikes</button>
+          <div class="replies">
+            ${data.replies.map(reply => `<p><strong>${reply.name}:</strong> ${reply.message}</p>`).join('')}
+          </div>
+          <div class="replyBox" style="display: none;">
+            <textarea class="replyInput" placeholder="Your reply..."></textarea>
+            <button class="submitReplyBtn">Submit Reply</button>
+          </div>
+        `;
+        postsContainer.appendChild(div);
+
+        // Event listeners
+        div.querySelector('.deleteBtn').addEventListener('click', () => {
+          if (confirm("Delete this post?")) {
+            db.collection('posts').doc(postId).delete();
+          }
         });
-        confirmationBox.show();
-      });
 
-      // Handle Edit
-      div.querySelector('.editBtn').addEventListener('click', () => {
-        const newContent = prompt('Edit your post:', data.message);
-        if (newContent && newContent !== data.message) {
-          db.collection('posts').doc(postId).update({ message: newContent });
-        }
-      });
-
-      // Handle Reply
-      div.querySelector('.replyBtn').addEventListener('click', () => {
-        const replyBox = div.querySelector('.replyBox');
-        replyBox.style.display = (replyBox.style.display === 'none') ? 'block' : 'none';
-      });
-
-      div.querySelector('.submitReplyBtn').addEventListener('click', () => {
-        const replyMessage = div.querySelector('.replyInput').value.trim();
-        if (replyMessage) {
-          const name = "Anonymous"; // Or use the username
-          const replies = [...data.replies, { name, message: replyMessage }];
-          db.collection('posts').doc(postId).update({ replies });
-          div.querySelector('.replyInput').value = ''; // Clear reply box
-        }
-      });
-
-      // Handle Like
-      div.querySelector('.likeBtn').addEventListener('click', () => {
-        let newLikes = data.likes + (data.hasLiked ? -1 : 1);
-        db.collection('posts').doc(postId).update({
-          likes: newLikes,
-          hasLiked: !data.hasLiked,
+        div.querySelector('.editBtn').addEventListener('click', () => {
+          const newContent = prompt('Edit your post:', data.message);
+          if (newContent && newContent !== data.message) {
+            db.collection('posts').doc(postId).update({ message: newContent });
+          }
         });
-      });
 
-      // Handle Dislike
-      div.querySelector('.dislikeBtn').addEventListener('click', () => {
-        let newDislikes = data.dislikes + (data.hasDisliked ? -1 : 1);
-        db.collection('posts').doc(postId).update({
-          dislikes: newDislikes,
-          hasDisliked: !data.hasDisliked,
+        div.querySelector('.replyBtn').addEventListener('click', () => {
+          const replyBox = div.querySelector('.replyBox');
+          replyBox.style.display = replyBox.style.display === 'none' ? 'block' : 'none';
+        });
+
+        div.querySelector('.submitReplyBtn').addEventListener('click', () => {
+          const replyInput = div.querySelector('.replyInput');
+          const replyMsg = replyInput.value.trim();
+          if (replyMsg) {
+            const name = "Anonymous";
+            const replies = [...data.replies, { name, message: replyMsg }];
+            db.collection('posts').doc(postId).update({ replies });
+            replyInput.value = '';
+          }
+        });
+
+        div.querySelector('.likeBtn').addEventListener('click', () => {
+          db.collection('posts').doc(postId).update({ likes: data.likes + 1 });
+        });
+
+        div.querySelector('.dislikeBtn').addEventListener('click', () => {
+          db.collection('posts').doc(postId).update({ dislikes: data.dislikes + 1 });
         });
       });
     });
-  });
-}
+  }
 
-// Custom Confirmation Box
-function confirmBox(message, onConfirm) {
-  const box = document.createElement('div');
-  box.style.position = 'fixed';
-  box.style.top = '50%';
-  box.style.left = '50%';
-  box.style.transform = 'translate(-50%, -50%)';
-  box.style.padding = '20px';
-  box.style.background = '#fff';
-  box.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
-  box.style.zIndex = '1000';
-
-  const messageElement = document.createElement('p');
-  messageElement.textContent = message;
-  box.appendChild(messageElement);
-
-  const buttonsContainer = document.createElement('div');
-  const yesButton = document.createElement('button');
-  yesButton.textContent = 'Yes';
-  yesButton.addEventListener('click', () => {
-    onConfirm();
-    box.remove();
-  });
-
-  const noButton = document.createElement('button');
-  noButton.textContent = 'No';
-  noButton.addEventListener('click', () => {
-    box.remove();
-  });
-
-  buttonsContainer.appendChild(yesButton);
-  buttonsContainer.appendChild(noButton);
-  box.appendChild(buttonsContainer);
-
-  document.body.appendChild(box);
-  return {
-    show: () => box.style.display = 'block',
-    hide: () => box.style.display = 'none',
-  };
-}
-
-// Fetch the posts initially
-fetchPosts();
+  fetchPosts();
 </script>
 </body>
 </html>
