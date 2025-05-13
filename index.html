@@ -87,9 +87,14 @@
   <button type="submit">Post</button>
 </form>
 
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-<script>
+<!-- FIREBASE LOGIC -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, serverTimestamp,
+  onSnapshot, query, orderBy, doc, updateDoc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
   authDomain: "weirdforums-f8a45.firebaseapp.com",
@@ -99,27 +104,27 @@ const firebaseConfig = {
   appId: "1:816710038730:web:4a4de7f70c8813d162b033",
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 const postForm = document.getElementById('postForm');
 const postsContainer = document.getElementById('posts-container');
 
 postForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = document.getElementById('username').value;
-  const message = document.getElementById('message').value;
+  const name = document.getElementById('username').value.trim();
+  const message = document.getElementById('message').value.trim();
 
-  const newPost = {
+  if (!name || !message) return;
+
+  await addDoc(collection(db, 'posts'), {
     name,
     message,
     likes: 0,
     dislikes: 0,
     replies: [],
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-  };
-
-  await db.collection('posts').add(newPost);
+    createdAt: serverTimestamp(),
+  });
 
   document.getElementById('username').value = '';
   document.getElementById('message').value = '';
@@ -137,8 +142,8 @@ function bindPostEvents(div, postId, data) {
     `;
     div.appendChild(confirmBox);
 
-    confirmBox.querySelector('.confirmYes').addEventListener('click', () => {
-      db.collection('posts').doc(postId).delete();
+    confirmBox.querySelector('.confirmYes').addEventListener('click', async () => {
+      await deleteDoc(doc(db, 'posts', postId));
       confirmBox.remove();
     });
 
@@ -156,10 +161,10 @@ function bindPostEvents(div, postId, data) {
     `;
     div.appendChild(replyBox);
 
-    replyBox.querySelector('.submitEditBtn').addEventListener('click', () => {
+    replyBox.querySelector('.submitEditBtn').addEventListener('click', async () => {
       const newContent = replyBox.querySelector('.editInput').value.trim();
       if (newContent && newContent !== data.message) {
-        db.collection('posts').doc(postId).update({ message: newContent });
+        await updateDoc(doc(db, 'posts', postId), { message: newContent });
         replyBox.remove();
       }
     });
@@ -174,12 +179,12 @@ function bindPostEvents(div, postId, data) {
     replyBox.style.display = replyBox.style.display === 'none' ? 'block' : 'none';
   });
 
-  div.querySelector('.submitReplyBtn').addEventListener('click', () => {
+  div.querySelector('.submitReplyBtn').addEventListener('click', async () => {
     const replyMessage = div.querySelector('.replyInput').value.trim();
     if (replyMessage) {
       const name = "Anonymous";
-      const replies = [...data.replies, { name, message: replyMessage }];
-      db.collection('posts').doc(postId).update({ replies });
+      const updatedReplies = [...data.replies, { name, message: replyMessage }];
+      await updateDoc(doc(db, 'posts', postId), { replies: updatedReplies });
       div.querySelector('.replyInput').value = '';
     }
   });
@@ -187,8 +192,7 @@ function bindPostEvents(div, postId, data) {
   div.querySelector('.likeBtn').addEventListener('click', async () => {
     const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
     if (likedPosts.includes(postId)) return;
-
-    await db.collection('posts').doc(postId).update({ likes: firebase.firestore.FieldValue.increment(1) });
+    await updateDoc(doc(db, 'posts', postId), { likes: data.likes + 1 });
     likedPosts.push(postId);
     localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
   });
@@ -196,19 +200,19 @@ function bindPostEvents(div, postId, data) {
   div.querySelector('.dislikeBtn').addEventListener('click', async () => {
     const dislikedPosts = JSON.parse(localStorage.getItem('dislikedPosts') || '[]');
     if (dislikedPosts.includes(postId)) return;
-
-    await db.collection('posts').doc(postId).update({ dislikes: firebase.firestore.FieldValue.increment(1) });
+    await updateDoc(doc(db, 'posts', postId), { dislikes: data.dislikes + 1 });
     dislikedPosts.push(postId);
     localStorage.setItem('dislikedPosts', JSON.stringify(dislikedPosts));
   });
 }
 
 function fetchPosts() {
-  db.collection('posts').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+  onSnapshot(q, (snapshot) => {
     postsContainer.innerHTML = '';
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const postId = doc.id;
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      const postId = docSnap.id;
       const div = document.createElement('div');
       div.className = 'post';
       const imgMatch = data.message.match(/https?:\/\/i\.imgur\.com\/\S+\.(jpg|png|gif|jpeg)/i);
@@ -238,5 +242,6 @@ function fetchPosts() {
 
 fetchPosts();
 </script>
+
 </body>
 </html>
