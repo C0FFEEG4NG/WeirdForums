@@ -107,10 +107,8 @@ const postsContainer = document.getElementById('posts-container');
 
 postForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = document.getElementById('username').value.trim();
-  const message = document.getElementById('message').value.trim();
-
-  if (!name || !message) return;
+  const name = document.getElementById('username').value;
+  const message = document.getElementById('message').value;
 
   const newPost = {
     name,
@@ -121,14 +119,89 @@ postForm.addEventListener('submit', async (e) => {
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
 
-  try {
-    await db.collection('posts').add(newPost);
-    document.getElementById('username').value = '';
-    document.getElementById('message').value = '';
-  } catch (error) {
-    console.error("Error adding post: ", error);
-  }
+  await db.collection('posts').add(newPost);
+
+  document.getElementById('username').value = '';
+  document.getElementById('message').value = '';
 });
+
+function bindPostEvents(div, postId, data) {
+  div.querySelector('.deleteBtn').addEventListener('click', () => {
+    const confirmBox = document.createElement('div');
+    confirmBox.innerHTML = `
+      <p>Are you sure you want to delete this post?</p>
+      <div class="confirm-buttons">
+        <button class="confirmYes">Yes</button>
+        <button class="confirmNo">No</button>
+      </div>
+    `;
+    div.appendChild(confirmBox);
+
+    confirmBox.querySelector('.confirmYes').addEventListener('click', () => {
+      db.collection('posts').doc(postId).delete();
+      confirmBox.remove();
+    });
+
+    confirmBox.querySelector('.confirmNo').addEventListener('click', () => {
+      confirmBox.remove();
+    });
+  });
+
+  div.querySelector('.editBtn').addEventListener('click', () => {
+    const replyBox = document.createElement('div');
+    replyBox.innerHTML = `
+      <textarea class="editInput">${data.message}</textarea>
+      <button class="submitEditBtn">Submit</button>
+      <button class="cancelEditBtn">Cancel</button>
+    `;
+    div.appendChild(replyBox);
+
+    replyBox.querySelector('.submitEditBtn').addEventListener('click', () => {
+      const newContent = replyBox.querySelector('.editInput').value.trim();
+      if (newContent && newContent !== data.message) {
+        db.collection('posts').doc(postId).update({ message: newContent });
+        replyBox.remove();
+      }
+    });
+
+    replyBox.querySelector('.cancelEditBtn').addEventListener('click', () => {
+      replyBox.remove();
+    });
+  });
+
+  div.querySelector('.replyBtn').addEventListener('click', () => {
+    const replyBox = div.querySelector('.replyBox');
+    replyBox.style.display = replyBox.style.display === 'none' ? 'block' : 'none';
+  });
+
+  div.querySelector('.submitReplyBtn').addEventListener('click', () => {
+    const replyMessage = div.querySelector('.replyInput').value.trim();
+    if (replyMessage) {
+      const name = "Anonymous";
+      const replies = [...data.replies, { name, message: replyMessage }];
+      db.collection('posts').doc(postId).update({ replies });
+      div.querySelector('.replyInput').value = '';
+    }
+  });
+
+  div.querySelector('.likeBtn').addEventListener('click', async () => {
+    const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
+    if (likedPosts.includes(postId)) return;
+
+    await db.collection('posts').doc(postId).update({ likes: firebase.firestore.FieldValue.increment(1) });
+    likedPosts.push(postId);
+    localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
+  });
+
+  div.querySelector('.dislikeBtn').addEventListener('click', async () => {
+    const dislikedPosts = JSON.parse(localStorage.getItem('dislikedPosts') || '[]');
+    if (dislikedPosts.includes(postId)) return;
+
+    await db.collection('posts').doc(postId).update({ dislikes: firebase.firestore.FieldValue.increment(1) });
+    dislikedPosts.push(postId);
+    localStorage.setItem('dislikedPosts', JSON.stringify(dislikedPosts));
+  });
+}
 
 function fetchPosts() {
   db.collection('posts').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
@@ -158,85 +231,7 @@ function fetchPosts() {
         </div>
       `;
       postsContainer.appendChild(div);
-
-      div.querySelector('.deleteBtn').addEventListener('click', () => {
-        const confirmBox = document.createElement('div');
-        confirmBox.innerHTML = `
-          <p>Are you sure you want to delete this post?</p>
-          <div class="confirm-buttons">
-            <button class="confirmYes">Yes</button>
-            <button class="confirmNo">No</button>
-          </div>
-        `;
-        div.appendChild(confirmBox);
-
-        const yesBtn = confirmBox.querySelector('.confirmYes');
-        const noBtn = confirmBox.querySelector('.confirmNo');
-
-        yesBtn.addEventListener('click', () => {
-          db.collection('posts').doc(postId).delete();
-          confirmBox.remove();
-        });
-
-        noBtn.addEventListener('click', () => {
-          confirmBox.remove();
-        });
-      });
-
-      div.querySelector('.editBtn').addEventListener('click', () => {
-        const replyBox = document.createElement('div');
-        replyBox.innerHTML = `
-          <textarea class="editInput">${data.message}</textarea>
-          <button class="submitEditBtn">Submit</button>
-          <button class="cancelEditBtn">Cancel</button>
-        `;
-        div.appendChild(replyBox);
-
-        replyBox.querySelector('.submitEditBtn').addEventListener('click', () => {
-          const newContent = replyBox.querySelector('.editInput').value.trim();
-          if (newContent && newContent !== data.message) {
-            db.collection('posts').doc(postId).update({ message: newContent });
-            replyBox.remove();
-          }
-        });
-
-        replyBox.querySelector('.cancelEditBtn').addEventListener('click', () => {
-          replyBox.remove();
-        });
-      });
-
-      div.querySelector('.replyBtn').addEventListener('click', () => {
-        const replyBox = div.querySelector('.replyBox');
-        replyBox.style.display = replyBox.style.display === 'none' ? 'block' : 'none';
-      });
-
-      div.querySelector('.submitReplyBtn').addEventListener('click', () => {
-        const replyMessage = div.querySelector('.replyInput').value.trim();
-        if (replyMessage) {
-          const name = "Anonymous";
-          const replies = [...data.replies, { name, message: replyMessage }];
-          db.collection('posts').doc(postId).update({ replies });
-          div.querySelector('.replyInput').value = '';
-        }
-      });
-
-      div.querySelector('.likeBtn').addEventListener('click', async () => {
-        const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
-        if (likedPosts.includes(postId)) return;
-
-        await db.collection('posts').doc(postId).update({ likes: firebase.firestore.FieldValue.increment(1) });
-        likedPosts.push(postId);
-        localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-      });
-
-      div.querySelector('.dislikeBtn').addEventListener('click', async () => {
-        const dislikedPosts = JSON.parse(localStorage.getItem('dislikedPosts') || '[]');
-        if (dislikedPosts.includes(postId)) return;
-
-        await db.collection('posts').doc(postId).update({ dislikes: firebase.firestore.FieldValue.increment(1) });
-        dislikedPosts.push(postId);
-        localStorage.setItem('dislikedPosts', JSON.stringify(dislikedPosts));
-      });
+      bindPostEvents(div, postId, data);
     });
   });
 }
