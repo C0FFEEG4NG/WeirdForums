@@ -189,23 +189,6 @@ function bindPostEvents(div, postId, data) {
     }
   });
 
-  div.querySelector('.likeBtn').addEventListener('click', async () => {
-    const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
-    if (likedPosts.includes(postId)) return;
-    await updateDoc(doc(db, 'posts', postId), { likes: data.likes + 1 });
-    likedPosts.push(postId);
-    localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-  });
-
-  div.querySelector('.dislikeBtn').addEventListener('click', async () => {
-    const dislikedPosts = JSON.parse(localStorage.getItem('dislikedPosts') || '[]');
-    if (dislikedPosts.includes(postId)) return;
-    await updateDoc(doc(db, 'posts', postId), { dislikes: data.dislikes + 1 });
-    dislikedPosts.push(postId);
-    localStorage.setItem('dislikedPosts', JSON.stringify(dislikedPosts));
-  });
-}
-
 function fetchPosts() {
   const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
   onSnapshot(q, (snapshot) => {
