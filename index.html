@@ -110,12 +110,12 @@ postForm.addEventListener('submit', async (e) => {
   const name = document.getElementById('username').value;
   const message = document.getElementById('message').value;
 
-  const newPost = { 
-    name, 
-    message, 
-    likes: 0, 
-    dislikes: 0, 
-    replies: [], 
+  const newPost = {
+    name,
+    message,
+    likes: 0,
+    dislikes: 0,
+    replies: [],
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
 
@@ -170,6 +170,7 @@ function fetchPosts() {
 
         yesBtn.addEventListener('click', () => {
           db.collection('posts').doc(postId).delete();
+          confirmBox.remove();
         });
 
         noBtn.addEventListener('click', () => {
@@ -178,10 +179,25 @@ function fetchPosts() {
       });
 
       div.querySelector('.editBtn').addEventListener('click', () => {
-        const newContent = prompt('Edit your post:', data.message);
-        if (newContent && newContent !== data.message) {
-          db.collection('posts').doc(postId).update({ message: newContent });
-        }
+        const replyBox = document.createElement('div');
+        replyBox.innerHTML = `
+          <textarea class="editInput">${data.message}</textarea>
+          <button class="submitEditBtn">Submit</button>
+          <button class="cancelEditBtn">Cancel</button>
+        `;
+        div.appendChild(replyBox);
+
+        replyBox.querySelector('.submitEditBtn').addEventListener('click', () => {
+          const newContent = replyBox.querySelector('.editInput').value.trim();
+          if (newContent && newContent !== data.message) {
+            db.collection('posts').doc(postId).update({ message: newContent });
+            replyBox.remove();
+          }
+        });
+
+        replyBox.querySelector('.cancelEditBtn').addEventListener('click', () => {
+          replyBox.remove();
+        });
       });
 
       div.querySelector('.replyBtn').addEventListener('click', () => {
@@ -203,7 +219,7 @@ function fetchPosts() {
         const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
         if (likedPosts.includes(postId)) return;
 
-        await db.collection('posts').doc(postId).update({ likes: data.likes + 1 });
+        await db.collection('posts').doc(postId).update({ likes: firebase.firestore.FieldValue.increment(1) });
         likedPosts.push(postId);
         localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
       });
@@ -212,7 +228,7 @@ function fetchPosts() {
         const dislikedPosts = JSON.parse(localStorage.getItem('dislikedPosts') || '[]');
         if (dislikedPosts.includes(postId)) return;
 
-        await db.collection('posts').doc(postId).update({ dislikes: data.dislikes + 1 });
+        await db.collection('posts').doc(postId).update({ dislikes: firebase.firestore.FieldValue.increment(1) });
         dislikedPosts.push(postId);
         localStorage.setItem('dislikedPosts', JSON.stringify(dislikedPosts));
       });
