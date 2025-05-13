@@ -107,8 +107,10 @@ const postsContainer = document.getElementById('posts-container');
 
 postForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = document.getElementById('username').value;
-  const message = document.getElementById('message').value;
+  const name = document.getElementById('username').value.trim();
+  const message = document.getElementById('message').value.trim();
+
+  if (!name || !message) return;
 
   const newPost = {
     name,
@@ -119,10 +121,13 @@ postForm.addEventListener('submit', async (e) => {
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
 
-  await db.collection('posts').add(newPost);
-
-  document.getElementById('username').value = '';
-  document.getElementById('message').value = '';
+  try {
+    await db.collection('posts').add(newPost);
+    document.getElementById('username').value = '';
+    document.getElementById('message').value = '';
+  } catch (error) {
+    console.error("Error adding post: ", error);
+  }
 });
 
 function fetchPosts() {
