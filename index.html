@@ -65,6 +65,11 @@
       display: none;
       flex-direction: column;
     }
+    .confirm-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -150,8 +155,26 @@ function fetchPosts() {
       postsContainer.appendChild(div);
 
       div.querySelector('.deleteBtn').addEventListener('click', () => {
-        const confirmDelete = confirm("Delete this post?");
-        if (confirmDelete) db.collection('posts').doc(postId).delete();
+        const confirmBox = document.createElement('div');
+        confirmBox.innerHTML = `
+          <p>Are you sure you want to delete this post?</p>
+          <div class="confirm-buttons">
+            <button class="confirmYes">Yes</button>
+            <button class="confirmNo">No</button>
+          </div>
+        `;
+        div.appendChild(confirmBox);
+
+        const yesBtn = confirmBox.querySelector('.confirmYes');
+        const noBtn = confirmBox.querySelector('.confirmNo');
+
+        yesBtn.addEventListener('click', () => {
+          db.collection('posts').doc(postId).delete();
+        });
+
+        noBtn.addEventListener('click', () => {
+          confirmBox.remove();
+        });
       });
 
       div.querySelector('.editBtn').addEventListener('click', () => {
