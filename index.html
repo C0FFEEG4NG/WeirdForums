@@ -53,7 +53,10 @@
 </head>
 <body>
   <canvas id="screensaver"></canvas>
-
+<audio id="bg-music" autoplay loop>
+  <source src="vaporwave.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
   <div class="text-overlay">
     <h1>WeirdForums</h1>
     <h2>Sorry! We are offline</h2>
@@ -126,6 +129,12 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     });
+    document.body.addEventListener('click', () => {
+  const music = document.getElementById('bg-music');
+  music.play().catch(e => {
+    console.log("Autoplay blocked, user must interact.");
+  });
+}, { once: true });
   </script>
 </body>
 </html>
