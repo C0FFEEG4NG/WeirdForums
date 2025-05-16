@@ -53,15 +53,17 @@
 </head>
 <body>
   <canvas id="screensaver"></canvas>
-<audio id="bg-music" autoplay loop>
-  <source src="Pufino - Thoughtful (freetouse.com).mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
-</audio>
+
   <div class="text-overlay">
     <h1>WeirdForums</h1>
     <h2>Sorry! We are offline</h2>
   </div>
 
+  <audio id="bg-music" autoplay loop>
+  <source src="Pufino - Thoughtful (freetouse.com).mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+  
   <script>
     const canvas = document.getElementById('screensaver');
     const ctx = canvas.getContext('2d');
