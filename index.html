@@ -54,11 +54,26 @@
 <body>
   <canvas id="screensaver"></canvas>
 
-<audio id="bg-music" autoplay loop>
-  <source src="Pufino%20-%20Thoughtful%20(freetouse.com).mp3" type="audio/mpeg">
-</audio>
-  
+  <div class="text-overlay">
+    <h1>WeirdForums</h1>
+    <h2>Sorry! We are offline</h2>
+  </div>
+
+  <!-- 🎵 Audio tag -->
+  <audio id="bg-music" autoplay loop>
+    <source src="Pufino%20-%20Thoughtful%20(freetouse.com).mp3" type="audio/mpeg">
+    Your browser doesn’t support audio.
+  </audio>
+
   <script>
+    // Unlock audio on first user interaction
+    document.body.addEventListener('click', () => {
+      const music = document.getElementById('bg-music');
+      if (music) music.play().catch(err => {
+        console.warn('Autoplay failed:', err);
+      });
+    }, { once: true });
+
     const canvas = document.getElementById('screensaver');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
@@ -124,136 +139,7 @@
     window.addEventListener('resize', () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      const canvas = document.getElementById('screensaver');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const orbs = [];
-const particles = [];
-const colors = ['#00FFFF', '#FF00FF', '#FFFF00', '#FF4500', '#00FF7F', '#1E90FF'];
-
-class Orb {
-  constructor() {
-    this.radius = Math.random() * 30 + 10;
-    this.x = Math.random() * canvas.width;
-    this.y = Math.random() * canvas.height;
-    this.vx = (Math.random() - 0.5) * 4;
-    this.vy = (Math.random() - 0.5) * 4;
-    this.color = colors[Math.floor(Math.random() * colors.length)];
-  }
-
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-
-    if (this.x < this.radius || this.x > canvas.width - this.radius) {
-      this.vx *= -1;
-      this.color = colors[Math.floor(Math.random() * colors.length)];
-    }
-
-    if (this.y < this.radius || this.y > canvas.height - this.radius) {
-      this.vy *= -1;
-      this.color = colors[Math.floor(Math.random() * colors.length)];
-    }
-  }
-
-  draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 20;
-    ctx.fill();
-    ctx.closePath();
-  }
-}
-
-class Particle {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.radius = Math.random() * 3 + 1;
-    this.angle = Math.random() * 2 * Math.PI;
-    this.speed = Math.random() * 4 + 2;
-    this.vx = Math.cos(this.angle) * this.speed;
-    this.vy = Math.sin(this.angle) * this.speed;
-    this.alpha = 1;
-    this.color = colors[Math.floor(Math.random() * colors.length)];
-  }
-
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.alpha -= 0.02;
-  }
-
-  draw() {
-    ctx.save();
-    ctx.globalAlpha = this.alpha;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 10;
-    ctx.fill();
-    ctx.closePath();
-    ctx.restore();
-  }
-}
-
-// spawn orbs
-for (let i = 0; i < 25; i++) {
-  orbs.push(new Orb());
-}
-
-// animation loop
-function animate() {
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  orbs.forEach(orb => {
-    orb.update();
-    orb.draw();
-  });
-
-  // particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    particles[i].update();
-    particles[i].draw();
-    if (particles[i].alpha <= 0) {
-      particles.splice(i, 1);
-    }
-  }
-
-  requestAnimationFrame(animate);
-}
-
-animate();
-
-// explosion on click
-canvas.addEventListener('click', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  for (let i = 0; i < 30; i++) {
-    particles.push(new Particle(mouseX, mouseY));
-  }
-});
-
-// resize canvas on window change
-window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-});
-
-      document.body.addEventListener('click', () => {
-    const music = document.getElementById('bg-music');
-    if (music) music.play().catch(err => {
-      console.warn('Could not autoplay:', err);
     });
-  }, { once: true });
   </script>
 </body>
 </html>
