@@ -251,12 +251,12 @@ window.addEventListener('resize', () => {
   canvas.height = window.innerHeight;
 });
 
-// unlock music on first click (browser autoplay block fix)
-document.body.addEventListener('click', () => {
-  const music = document.getElementById('bg-music');
-  if (music) music.play().catch(() => {});
-}, { once: true });
-}, { once: true });
+      document.body.addEventListener('click', () => {
+    const music = document.getElementById('bg-music');
+    if (music) music.play().catch(err => {
+      console.warn('Could not autoplay:', err);
+    });
+  }, { once: true });
   </script>
 </body>
 </html>
