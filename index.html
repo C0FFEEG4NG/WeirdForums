@@ -51,6 +51,7 @@
 </head>
 <body>
   <div id="postForm">
+    <input type="text" id="posterName" placeholder="Your name (optional)" />
     <textarea id="postContent" placeholder="What's on your mind?"></textarea>
     <input type="text" id="imageURL" placeholder="Imgur Image URL (optional)" />
     <button onclick="createPost()" class="btn">Post</button>
@@ -76,10 +77,12 @@
     const postsCol = collection(db, "posts");
 
     async function createPost() {
+      const name = document.getElementById("posterName").value;
       const content = document.getElementById("postContent").value;
       const image = document.getElementById("imageURL").value;
       if (!content.trim()) return;
       await addDoc(postsCol, {
+        name,
         content,
         image,
         timestamp: Date.now(),
@@ -87,6 +90,7 @@
         dislikes: 0,
         replies: []
       });
+      document.getElementById("posterName").value = "";
       document.getElementById("postContent").value = "";
       document.getElementById("imageURL").value = "";
     }
@@ -97,16 +101,23 @@
       container.innerHTML = "";
       snapshot.docs.sort((a,b)=>b.data().timestamp - a.data().timestamp).forEach(docSnap => {
         const post = docSnap.data();
+        const name = post.name || "Anonymous";
+        const content = post.content || "(no content)";
+        const image = post.image || "";
+        const likes = post.likes ?? 0;
+        const dislikes = post.dislikes ?? 0;
+
         const postDiv = document.createElement("div");
         postDiv.className = "post";
         postDiv.innerHTML = `
-          <p>${post.content}</p>
-          ${post.image ? `<img src="${post.image}" style="max-width:100%; border-radius:6px;" />` : ""}
+          <strong>${name}</strong>
+          <p>${content}</p>
+          ${image ? `<img src="${image}" style="max-width:100%; border-radius:6px;" />` : ""}
           <div class="controls">
-            <button class="btn" onclick="likePost('${docSnap.id}')">👍 ${post.likes}</button>
-            <button class="btn" onclick="dislikePost('${docSnap.id}')">👎 ${post.dislikes}</button>
+            <button class="btn" onclick="likePost('${docSnap.id}')">👍 ${likes}</button>
+            <button class="btn" onclick="dislikePost('${docSnap.id}')">👎 ${dislikes}</button>
             <button class="btn" onclick="showReply('${docSnap.id}')">Reply</button>
-            <button class="btn" onclick="showEdit('${docSnap.id}', ${JSON.stringify(post.content)})">Edit</button>
+            <button class="btn" onclick="showEdit('${docSnap.id}', ${JSON.stringify(content)})">Edit</button>
             <button class="btn" onclick="showDelete('${docSnap.id}')">Delete</button>
           </div>
           <div class="replies">${(post.replies || []).map(r => `<div class='post'><p>${r}</p></div>`).join("")}</div>
@@ -162,7 +173,7 @@
     }
 
     window.confirmEdit = async (id) => {
-      const content = document.getElementById(`edit-${id}`).value;
+      const content = document.getElementById(`edit-${id}").value;
       const ref = doc(db, "posts", id);
       await updateDoc(ref, { content });
     }
