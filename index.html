@@ -73,7 +73,22 @@ const firebaseConfig = {
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const postsCol = collection(db, "posts");
-
+async function createPost() {
+  const content = document.getElementById("postContent").value;
+  const image = document.getElementById("imageURL").value;
+  if (!content.trim()) return;
+  await addDoc(postsCol, {
+    content,
+    image,
+    timestamp: Date.now(),
+    likes: 0,
+    dislikes: 0,
+    replies: []
+  });
+  document.getElementById("postContent").value = "";
+  document.getElementById("imageURL").value = "";
+}
+window.createPost = createPost;
     async function createPost() {
       const content = document.getElementById("postContent").value;
       const image = document.getElementById("imageURL").value;
