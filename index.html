@@ -102,7 +102,7 @@
       snapshot.docs.sort((a,b)=>b.data().timestamp - a.data().timestamp).forEach(docSnap => {
         const post = docSnap.data();
         const name = post.name || "Anonymous";
-        const content = post.content || "(no content)";
+        const content = post.content || "(AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA FIX THIS!!!!!!!)";
         const image = post.image || "";
         const likes = post.likes ?? 0;
         const dislikes = post.dislikes ?? 0;
