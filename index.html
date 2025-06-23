@@ -99,48 +99,38 @@
     function renderPosts(snapshot) {
       const container = document.getElementById("postsContainer");
       container.innerHTML = "";
-      snapshot.docs.sort((a,b)=>b.data().timestamp - a.data().timestamp).forEach(docSnap => {
-        const post = docSnap.data();
-        const name = post.name || "Anonymous";
-        const content = post.content ||;
-        const image = post.image || "";
-        const likes = post.likes ?? 0;
-        const dislikes = post.dislikes ?? 0;
+      snapshot.docs
+        .sort((a, b) => b.data().timestamp - a.data().timestamp)
+        .forEach(docSnap => {
+          const post = docSnap.data();
+          const content = post.content;
+          if (!content || !content.trim()) return; // skip empty content posts
 
-       function renderPosts(snapshot) {
-  const container = document.getElementById("postsContainer");
-  container.innerHTML = "";
-  snapshot.docs
-    .sort((a, b) => b.data().timestamp - a.data().timestamp)
-    .forEach(docSnap => {
-      const post = docSnap.data();
-      const content = post.content;
-      if (!content || !content.trim()) return; // skip empty content posts
+          const name = post.name || "Anonymous";
+          const image = post.image || "";
+          const likes = post.likes ?? 0;
+          const dislikes = post.dislikes ?? 0;
 
-      const name = post.name || "Anonymous";
-      const image = post.image || "";
-      const likes = post.likes ?? 0;
-      const dislikes = post.dislikes ?? 0;
-
-      const postDiv = document.createElement("div");
-      postDiv.className = "post";
-      postDiv.innerHTML = `
-        <strong>${name}</strong>
-        <p>${content}</p>
-        ${image ? `<img src="${image}" style="max-width:100%; border-radius:6px;" />` : ""}
-        <div class="controls">
-          <button class="btn" onclick="likePost('${docSnap.id}')">👍 ${likes}</button>
-          <button class="btn" onclick="dislikePost('${docSnap.id}')">👎 ${dislikes}</button>
-          <button class="btn" onclick="showReply('${docSnap.id}')">Reply</button>
-          <button class="btn" onclick="showEdit('${docSnap.id}', ${JSON.stringify(content)})">Edit</button>
-          <button class="btn" onclick="showDelete('${docSnap.id}')">Delete</button>
-        </div>
-        <div class="replies">${(post.replies || []).map(r => `<div class='post'><p>${r}</p></div>`).join("")}</div>
-        <div id="confirm-${docSnap.id}"></div>
-      `;
-      container.appendChild(postDiv);
-    });
-}
+          const postDiv = document.createElement("div");
+          postDiv.className = "post";
+          postDiv.innerHTML = `
+            <strong>${name}</strong>
+            <p>${content}</p>
+            ${image ? `<img src="${image}" style="max-width:100%; border-radius:6px;" />` : ""}
+            <div class="controls">
+              <button class="btn" onclick="likePost('${docSnap.id}')">👍 ${likes}</button>
+              <button class="btn" onclick="dislikePost('${docSnap.id}')">👎 ${dislikes}</button>
+              <button class="btn" onclick="showReply('${docSnap.id}')">Reply</button>
+              <button class="btn" onclick="showEdit('${docSnap.id}', ${JSON.stringify(content)})">Edit</button>
+              <button class="btn" onclick="showDelete('${docSnap.id}')">Delete</button>
+            </div>
+            <div class="replies">${(post.replies || []).map(r => `<div class='post'><p>${r}</p></div>`).join("")}</div>
+            <div id="confirm-${docSnap.id}"></div>
+          `;
+          container.appendChild(postDiv);
+        });
+    }
+    window.renderPosts = renderPosts;
 
     onSnapshot(postsCol, renderPosts);
 
