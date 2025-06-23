@@ -96,6 +96,63 @@
     }
     window.createPost = createPost;
 
+    // localStorage based like/dislike toggles
+    const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
+    const dislikedPosts = JSON.parse(localStorage.getItem('dislikedPosts') || '[]');
+
+    function saveLocalStorage() {
+      localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
+      localStorage.setItem('dislikedPosts', JSON.stringify(dislikedPosts));
+    }
+
+    window.likePost = async (id) => {
+      const ref = doc(db, "posts", id);
+      const snap = await getDocs(postsCol);
+      let post = snap.docs.find(d => d.id === id).data();
+
+      const likedIndex = likedPosts.indexOf(id);
+      const dislikedIndex = dislikedPosts.indexOf(id);
+
+      if (likedIndex === -1) {
+        // Add like, remove dislike if exists
+        await updateDoc(ref, { likes: (post.likes || 0) + 1 });
+        likedPosts.push(id);
+        if (dislikedIndex !== -1) {
+          dislikedPosts.splice(dislikedIndex, 1);
+          await updateDoc(ref, { dislikes: Math.max((post.dislikes || 1) - 1, 0) });
+        }
+      } else {
+        // Remove like
+        await updateDoc(ref, { likes: Math.max((post.likes || 1) - 1, 0) });
+        likedPosts.splice(likedIndex, 1);
+      }
+      saveLocalStorage();
+    }
+
+    window.dislikePost = async (id) => {
+      const ref = doc(db, "posts", id);
+      const snap = await getDocs(postsCol);
+      let post = snap.docs.find(d => d.id === id).data();
+
+      const likedIndex = likedPosts.indexOf(id);
+      const dislikedIndex = dislikedPosts.indexOf(id);
+
+      if (dislikedIndex === -1) {
+        // Add dislike, remove like if exists
+        await updateDoc(ref, { dislikes: (post.dislikes || 0) + 1 });
+        dislikedPosts.push(id);
+        if (likedIndex !== -1) {
+          likedPosts.splice(likedIndex, 1);
+          await updateDoc(ref, { likes: Math.max((post.likes || 1) - 1, 0) });
+        }
+      } else {
+        // Remove dislike
+        await updateDoc(ref, { dislikes: Math.max((post.dislikes || 1) - 1, 0) });
+        dislikedPosts.splice(dislikedIndex, 1);
+      }
+      saveLocalStorage();
+    }
+
     function renderPosts(snapshot) {
       const container = document.getElementById("postsContainer");
       container.innerHTML = "";
@@ -133,20 +190,6 @@
     window.renderPosts = renderPosts;
 
     onSnapshot(postsCol, renderPosts);
-
-    window.likePost = async (id) => {
-      const ref = doc(db, "posts", id);
-      const snap = await getDocs(postsCol);
-      let post = snap.docs.find(d => d.id === id).data();
-      await updateDoc(ref, { likes: (post.likes || 0) + 1 });
-    }
-
-    window.dislikePost = async (id) => {
-      const ref = doc(db, "posts", id);
-      const snap = await getDocs(postsCol);
-      let post = snap.docs.find(d => d.id === id).data();
-      await updateDoc(ref, { dislikes: (post.dislikes || 0) + 1 });
-    }
 
     window.showReply = (id) => {
       const box = document.getElementById(`confirm-${id}`);
