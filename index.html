@@ -175,8 +175,8 @@
             <p>${content}</p>
             ${image ? `<img src="${image}" style="max-width:100%; border-radius:6px;" />` : ""}
             <div class="controls">
-              <button class="btn" onclick="likePost('${docSnap.id}')"><3 ${likes}</button>
-              <button class="btn" onclick="dislikePost('${docSnap.id}')"></3 ${dislikes}</button>
+              <button class="btn" onclick="likePost('${docSnap.id}')">👍 ${likes}</button>
+              <button class="btn" onclick="dislikePost('${docSnap.id}')">🖕 ${dislikes}</button>
               <button class="btn" onclick="showReply('${docSnap.id}')">Reply</button>
               <button class="btn" onclick="showEdit('${docSnap.id}', ${JSON.stringify(content)})">Edit</button>
               <button class="btn" onclick="showDelete('${docSnap.id}')">Delete</button>
