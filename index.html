@@ -53,7 +53,8 @@
   <div id="postForm">
     <input type="text" id="posterName" placeholder="Your name (optional)" />
     <textarea id="postContent" placeholder="What's on your mind?"></textarea>
-    <input type="text" id="imageURL" placeholder="Imgur Image URL (optional)" />
+    <!-- Changed to file input so we no longer rely on Imgur URLs -->
+    <input type="file" id="imageFile" accept="image/*" />
     <button onclick="createPost()" class="btn">Post</button>
   </div>
 
@@ -62,24 +63,36 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
       authDomain: "weirdforums-f8a45.firebaseapp.com",
       projectId: "weirdforums-f8a45",
-      storageBucket: "weirdforums-f8a45.firebasestorage.app",
+      storageBucket: "weirdforums-f8a45.appspot.com",
       messagingSenderId: "816710038730",
       appId: "1:816710038730:web:4a4de7f70c8813d162b033",
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const storage = getStorage(app);
     const postsCol = collection(db, "posts");
 
     async function createPost() {
       const name = document.getElementById("posterName").value;
       const content = document.getElementById("postContent").value;
-      const image = document.getElementById("imageURL").value;
+      const fileInput = document.getElementById("imageFile");
+      const file = fileInput.files[0];
+      let image = "";
+
+      // If a file was selected, upload it to Firebase Storage and grab the download URL
+      if (file) {
+        const imgRef = storageRef(storage, `images/${Date.now()}_${file.name}`);
+        await uploadBytes(imgRef, file);
+        image = await getDownloadURL(imgRef);
+      }
+
       if (!content.trim()) return;
       await addDoc(postsCol, {
         name,
@@ -92,7 +105,7 @@
       });
       document.getElementById("posterName").value = "";
       document.getElementById("postContent").value = "";
-      document.getElementById("imageURL").value = "";
+      fileInput.value = "";
     }
     window.createPost = createPost;
 
