@@ -1,260 +1,428 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WeirdForums</title>
-  <style>
-    body {
-      background-color: #111;
-      color: #eee;
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-    #postForm, .post {
-      background-color: #222;
-      border: 1px solid #333;
-      padding: 10px;
-      margin: 10px;
-      border-radius: 8px;
-    }
-    input, textarea, button {
-      background-color: #333;
-      color: #eee;
-      border: none;
-      padding: 5px;
-      margin: 5px 0;
-      width: 100%;
-    }
-    .btn {
-      background-color: #444;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background-color: #555;
-    }
-    .replies {
-      margin-left: 20px;
-    }
-    .controls {
-      display: flex;
-      gap: 5px;
-    }
-    .confirm-box {
-      margin-top: 5px;
-      background-color: #333;
-      padding: 5px;
-      border-radius: 4px;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WeirdForums - Refactored</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles to complement Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* gray-900 */
+            color: #d1d5db; /* gray-300 */
+        }
+        /* Style for the scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; /* gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* gray-500 */
+        }
+        /* Simple animation for modal */
+        .modal-enter {
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
 </head>
-   <section id="upd" class="upd container">
-    <p>Updates:</p>
-    <p>Removed Imgur</p>
-  </section>
-<body>
-  <div id="postForm">
-    <input type="text" id="posterName" placeholder="Your name (optional)" />
-    <textarea id="postContent" placeholder="What's on your mind?"></textarea>
-    <!-- Changed to file input so we no longer rely on Imgur URLs -->
-    <input type="file" id="imageFile" accept="image/*" />
-    <button onclick="createPost()" class="btn">Post</button>
-  </div>
+<body class="antialiased">
 
-  <div id="postsContainer"></div>
+    <!-- Main Container -->
+    <div class="container mx-auto max-w-3xl p-4">
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        <!-- Header -->
+        <header class="mb-6 text-center">
+            <h1 class="text-4xl font-bold text-white">WeirdForums</h1>
+            <p id="userInfo" class="text-sm text-gray-400 mt-2">Initializing...</p>
+        </header>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
-      authDomain: "weirdforums-f8a45.firebaseapp.com",
-      projectId: "weirdforums-f8a45",
-      storageBucket: "weirdforums-f8a45.appspot.com",
-      messagingSenderId: "816710038730",
-      appId: "1:816710038730:web:4a4de7f70c8813d162b033",
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const postsCol = collection(db, "posts");
-
-    async function createPost() {
-      const name = document.getElementById("posterName").value;
-      const content = document.getElementById("postContent").value;
-      const fileInput = document.getElementById("imageFile");
-      const file = fileInput.files[0];
-      let image = "";
-
-      // If a file was selected, upload it to Firebase Storage and grab the download URL
-      if (file) {
-        const imgRef = storageRef(storage, `images/${Date.now()}_${file.name}`);
-        await uploadBytes(imgRef, file);
-        image = await getDownloadURL(imgRef);
-      }
-
-      if (!content.trim()) return;
-      await addDoc(postsCol, {
-        name,
-        content,
-        image,
-        timestamp: Date.now(),
-        likes: 0,
-        dislikes: 0,
-        replies: []
-      });
-      document.getElementById("posterName").value = "";
-      document.getElementById("postContent").value = "";
-      fileInput.value = "";
-    }
-    window.createPost = createPost;
-
-    // localStorage based like/dislike toggles
-    const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
-    const dislikedPosts = JSON.parse(localStorage.getItem('dislikedPosts') || '[]');
-
-    function saveLocalStorage() {
-      localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-      localStorage.setItem('dislikedPosts', JSON.stringify(dislikedPosts));
-    }
-
-    window.likePost = async (id) => {
-      const ref = doc(db, "posts", id);
-      const snap = await getDocs(postsCol);
-      let post = snap.docs.find(d => d.id === id).data();
-
-      const likedIndex = likedPosts.indexOf(id);
-      const dislikedIndex = dislikedPosts.indexOf(id);
-
-      if (likedIndex === -1) {
-        // Add like, remove dislike if exists
-        await updateDoc(ref, { likes: (post.likes || 0) + 1 });
-        likedPosts.push(id);
-        if (dislikedIndex !== -1) {
-          dislikedPosts.splice(dislikedIndex, 1);
-          await updateDoc(ref, { dislikes: Math.max((post.dislikes || 1) - 1, 0) });
-        }
-      } else {
-        // Remove like
-        await updateDoc(ref, { likes: Math.max((post.likes || 1) - 1, 0) });
-        likedPosts.splice(likedIndex, 1);
-      }
-      saveLocalStorage();
-    }
-
-    window.dislikePost = async (id) => {
-      const ref = doc(db, "posts", id);
-      const snap = await getDocs(postsCol);
-      let post = snap.docs.find(d => d.id === id).data();
-
-      const likedIndex = likedPosts.indexOf(id);
-      const dislikedIndex = dislikedPosts.indexOf(id);
-
-      if (dislikedIndex === -1) {
-        // Add dislike, remove like if exists
-        await updateDoc(ref, { dislikes: (post.dislikes || 0) + 1 });
-        dislikedPosts.push(id);
-        if (likedIndex !== -1) {
-          likedPosts.splice(likedIndex, 1);
-          await updateDoc(ref, { likes: Math.max((post.likes || 1) - 1, 0) });
-        }
-      } else {
-        // Remove dislike
-        await updateDoc(ref, { dislikes: Math.max((post.dislikes || 1) - 1, 0) });
-        dislikedPosts.splice(dislikedIndex, 1);
-      }
-      saveLocalStorage();
-    }
-
-    function renderPosts(snapshot) {
-      const container = document.getElementById("postsContainer");
-      container.innerHTML = "";
-      snapshot.docs
-        .sort((a, b) => b.data().timestamp - a.data().timestamp)
-        .forEach(docSnap => {
-          const post = docSnap.data();
-          const content = post.content;
-          if (!content || !content.trim()) return; // skip empty content posts
-
-          const name = post.name || "Anonymous";
-          const image = post.image || "";
-          const likes = post.likes ?? 0;
-          const dislikes = post.dislikes ?? 0;
-
-          const postDiv = document.createElement("div");
-          postDiv.className = "post";
-          postDiv.innerHTML = `
-            <strong>${name}</strong>
-            <p>${content}</p>
-            ${image ? `<img src="${image}" style="max-width:100%; border-radius:6px;" />` : ""}
-            <div class="controls">
-              <button class="btn" onclick="likePost('${docSnap.id}')">👍 ${likes}</button>
-              <button class="btn" onclick="dislikePost('${docSnap.id}')">🖕 ${dislikes}</button>
-              <button class="btn" onclick="showReply('${docSnap.id}')">Reply</button>
-              <button class="btn" onclick="showEdit('${docSnap.id}', ${JSON.stringify(content)})">Edit</button>
-              <button class="btn" onclick="showDelete('${docSnap.id}')">Delete</button>
+        <!-- Post Creation Form -->
+        <div id="postForm" class="bg-gray-800 p-5 rounded-lg shadow-lg mb-8">
+            <h2 class="text-xl font-semibold text-white mb-4">Create a New Post</h2>
+            <div class="space-y-4">
+                <input type="text" id="posterName" placeholder="Your name (optional, defaults to Anonymous)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                <textarea id="postContent" placeholder="What's on your mind?" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"></textarea>
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <input type="file" id="imageFile" accept="image/*" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                    <button id="postSubmitButton" onclick="createPost()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:scale-100">
+                        <span id="postSubmitSpinner" class="hidden animate-spin mr-2">🌀</span>
+                        <span id="postSubmitText">Post</span>
+                    </button>
+                </div>
             </div>
-            <div class="replies">${(post.replies || []).map(r => `<div class='post'><p>${r}</p></div>`).join("")}</div>
-            <div id="confirm-${docSnap.id}"></div>
-          `;
-          container.appendChild(postDiv);
+        </div>
+
+        <!-- Posts Container -->
+        <div id="postsContainer" class="space-y-6">
+            <!-- Posts will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- Universal Modal -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div id="modalContent" class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md modal-enter">
+            <!-- Modal content will be dynamically inserted here -->
+        </div>
+    </div>
+
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import necessary Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, runTransaction, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // --- Firebase Initialization and Auth ---
+
+        // These global variables are provided by the environment.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'weirdforums-f8a45';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // Fallback config for local testing if needed
+            apiKey: "AIzaSyBBwOMD194nKq0SD3j2_OAHboXdi6qOdGk",
+            authDomain: "weirdforums-f8a45.firebaseapp.com",
+            projectId: "weirdforums-f8a45",
+            storageBucket: "weirdforums-f8a45.appspot.com",
+            messagingSenderId: "816710038730",
+            appId: "1:816710038730:web:4a4de7f70c8813d162b033"
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, auth, db, storage, postsCol;
+        let currentUserId = null;
+
+        // Initialize Firebase and set up authentication
+        async function initializeFirebase() {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+            
+            // Use the public collection for the forum posts
+            postsCol = collection(db, `artifacts/${appId}/public/data/posts`);
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // User is signed in.
+                    currentUserId = user.uid;
+                    document.getElementById('userInfo').innerHTML = `Logged in with User ID: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserId}</span>`;
+                    // Start listening for post updates
+                    listenForPosts();
+                } else {
+                    // User is signed out. Attempt to sign in.
+                    document.getElementById('userInfo').innerText = 'Authenticating...';
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Authentication failed:", error);
+                        document.getElementById('userInfo').innerText = 'Authentication failed. Please refresh.';
+                    }
+                }
+            });
+        }
+
+        // --- Post Creation ---
+
+        window.createPost = async () => {
+            if (!currentUserId) {
+                alert("You must be logged in to post.");
+                return;
+            }
+
+            const name = document.getElementById("posterName").value.trim() || "Anonymous";
+            const content = document.getElementById("postContent").value.trim();
+            const fileInput = document.getElementById("imageFile");
+            const file = fileInput.files[0];
+
+            if (!content) {
+                alert("Post content cannot be empty.");
+                return;
+            }
+
+            const submitButton = document.getElementById("postSubmitButton");
+            const spinner = document.getElementById("postSubmitSpinner");
+            const buttonText = document.getElementById("postSubmitText");
+
+            // Disable button and show spinner
+            submitButton.disabled = true;
+            spinner.classList.remove('hidden');
+            buttonText.innerText = 'Posting...';
+
+            try {
+                let imageUrl = "";
+                if (file) {
+                    // Upload image to Firebase Storage
+                    const imgRef = storageRef(storage, `images/${Date.now()}_${file.name}`);
+                    await uploadBytes(imgRef, file);
+                    imageUrl = await getDownloadURL(imgRef);
+                }
+
+                // Add post to Firestore
+                await addDoc(postsCol, {
+                    authorId: currentUserId,
+                    authorName: name,
+                    content: content,
+                    imageUrl: imageUrl,
+                    timestamp: serverTimestamp(),
+                    likedBy: [],
+                    dislikedBy: [],
+                    replies: []
+                });
+
+                // Clear form fields
+                document.getElementById("posterName").value = "";
+                document.getElementById("postContent").value = "";
+                fileInput.value = "";
+
+            } catch (error) {
+                console.error("Error creating post:", error);
+                alert("Failed to create post. Please try again.");
+            } finally {
+                // Re-enable button and hide spinner
+                submitButton.disabled = false;
+                spinner.classList.add('hidden');
+                buttonText.innerText = 'Post';
+            }
+        };
+
+        // --- Post Rendering ---
+
+        function listenForPosts() {
+            const q = query(collection(db, `artifacts/${appId}/public/data/posts`));
+            onSnapshot(q, (snapshot) => {
+                const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Sort by timestamp, newest first. Handle null timestamps during server write.
+                posts.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+                renderPosts(posts);
+            });
+        }
+
+        function renderPosts(posts) {
+            const container = document.getElementById("postsContainer");
+            container.innerHTML = ""; // Clear existing posts
+
+            if (posts.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-400 py-8">No posts yet. Be the first!</div>`;
+                return;
+            }
+
+            posts.forEach(post => {
+                if (!post.content) return; // Skip posts with no content
+
+                const postDiv = document.createElement("div");
+                postDiv.className = "bg-gray-800 p-5 rounded-lg shadow-lg";
+                postDiv.id = `post-${post.id}`;
+
+                const isAuthor = post.authorId === currentUserId;
+                const hasLiked = post.likedBy.includes(currentUserId);
+                const hasDisliked = post.dislikedBy.includes(currentUserId);
+
+                const likeBtnClass = hasLiked ? 'bg-indigo-500 text-white' : 'bg-gray-700 hover:bg-gray-600';
+                const dislikeBtnClass = hasDisliked ? 'bg-red-500 text-white' : 'bg-gray-700 hover:bg-gray-600';
+
+                const postDate = post.timestamp ? new Date(post.timestamp.toMillis()).toLocaleString() : 'Just now';
+
+                postDiv.innerHTML = `
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <strong class="text-lg text-white">${post.authorName}</strong>
+                            <p class="text-xs text-gray-400">${postDate}</p>
+                        </div>
+                        ${isAuthor ? `
+                        <div class="flex items-center gap-2">
+                            <button onclick="showEditModal('${post.id}', \`${encodeURIComponent(post.content)}\`)" class="text-gray-400 hover:text-white transition">✏️</button>
+                            <button onclick="showDeleteModal('${post.id}')" class="text-gray-400 hover:text-white transition">🗑️</button>
+                        </div>` : ''}
+                    </div>
+                    <p class="text-gray-300 mb-4 whitespace-pre-wrap">${post.content}</p>
+                    ${post.imageUrl ? `<img src="${post.imageUrl}" alt="User uploaded image" class="rounded-md max-w-full max-h-96 mx-auto my-4" onerror="this.style.display='none'"/>` : ""}
+                    
+                    <div class="flex items-center gap-2 flex-wrap border-t border-gray-700 pt-3 mt-3">
+                        <button onclick="toggleReaction('${post.id}', 'like')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full transition ${likeBtnClass}">👍 <span>${post.likedBy.length}</span></button>
+                        <button onclick="toggleReaction('${post.id}', 'dislike')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full transition ${dislikeBtnClass}">👎 <span>${post.dislikedBy.length}</span></button>
+                        <button onclick="showReplyModal('${post.id}')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full bg-gray-700 hover:bg-gray-600 transition">💬 Reply</button>
+                    </div>
+
+                    <div id="replies-${post.id}" class="mt-4 space-y-3 pl-5 border-l-2 border-gray-700">
+                        ${(post.replies || []).map(r => `
+                            <div class="bg-gray-900/50 p-3 rounded-md">
+                                <p class="text-sm text-gray-300 whitespace-pre-wrap">${r.content}</p>
+                                <p class="text-xs text-gray-500 mt-1">by ${r.authorName} (${new Date(r.timestamp).toLocaleTimeString()})</p>
+                            </div>
+                        `).join("")}
+                    </div>
+                `;
+                container.appendChild(postDiv);
+            });
+        }
+
+        // --- Post Actions (Like, Dislike) ---
+        
+        window.toggleReaction = async (postId, reactionType) => {
+            if (!currentUserId) return;
+            const postRef = doc(db, `artifacts/${appId}/public/data/posts`, postId);
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const postDoc = await transaction.get(postRef);
+                    if (!postDoc.exists()) {
+                        throw "Document does not exist!";
+                    }
+
+                    const postData = postDoc.data();
+                    const likedBy = postData.likedBy || [];
+                    const dislikedBy = postData.dislikedBy || [];
+                    
+                    const hasLiked = likedBy.includes(currentUserId);
+                    const hasDisliked = dislikedBy.includes(currentUserId);
+
+                    let newLikedBy = [...likedBy];
+                    let newDislikedBy = [...dislikedBy];
+
+                    if (reactionType === 'like') {
+                        if (hasLiked) {
+                            newLikedBy = newLikedBy.filter(id => id !== currentUserId); // Unlike
+                        } else {
+                            newLikedBy.push(currentUserId); // Like
+                            if (hasDisliked) {
+                                newDislikedBy = newDislikedBy.filter(id => id !== currentUserId); // Remove dislike if present
+                            }
+                        }
+                    } else if (reactionType === 'dislike') {
+                        if (hasDisliked) {
+                            newDislikedBy = newDislikedBy.filter(id => id !== currentUserId); // Undislike
+                        } else {
+                            newDislikedBy.push(currentUserId); // Dislike
+                            if (hasLiked) {
+                                newLikedBy = newLikedBy.filter(id => id !== currentUserId); // Remove like if present
+                            }
+                        }
+                    }
+                    
+                    transaction.update(postRef, { likedBy: newLikedBy, dislikedBy: newDislikedBy });
+                });
+            } catch (error) {
+                console.error("Transaction failed: ", error);
+                alert("Could not update reaction. Please try again.");
+            }
+        };
+
+        // --- Modal Management ---
+
+        const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modalContent');
+
+        function showModal(content) {
+            modalContent.innerHTML = content;
+            modal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            modal.classList.add('hidden');
+            modalContent.innerHTML = '';
+        }
+        
+        // Hide modal when clicking outside of the content area
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                hideModal();
+            }
         });
-    }
-    window.renderPosts = renderPosts;
 
-    onSnapshot(postsCol, renderPosts);
+        // --- Modal Actions (Reply, Edit, Delete) ---
 
-    window.showReply = (id) => {
-      const box = document.getElementById(`confirm-${id}`);
-      box.innerHTML = `
-        <div class='confirm-box'>
-          <textarea id='reply-${id}' placeholder='Your reply'></textarea>
-          <button class='btn' onclick='sendReply("${id}")'>Send</button>
-        </div>`;
-    }
+        window.showReplyModal = (postId) => {
+            const content = `
+                <h3 class="text-lg font-bold text-white mb-4">Post a Reply</h3>
+                <textarea id="modal-textarea" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="4" placeholder="Your reply..."></textarea>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button onclick="hideModal()" class="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition">Cancel</button>
+                    <button onclick="confirmReply('${postId}')" class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition">Send</button>
+                </div>
+            `;
+            showModal(content);
+        }
 
-    window.sendReply = async (id) => {
-      const reply = document.getElementById(`reply-${id}`).value;
-      if (!reply.trim()) return;
-      const ref = doc(db, "posts", id);
-      const snap = await getDocs(postsCol);
-      const post = snap.docs.find(d => d.id === id).data();
-      const replies = post.replies || [];
-      replies.push(reply);
-      await updateDoc(ref, { replies });
-    }
+        window.confirmReply = async (postId) => {
+            const replyContent = document.getElementById('modal-textarea').value.trim();
+            if (!replyContent) return;
 
-    window.showEdit = (id, content) => {
-      const box = document.getElementById(`confirm-${id}`);
-      box.innerHTML = `
-        <div class='confirm-box'>
-          <textarea id='edit-${id}'>${content}</textarea>
-          <button class='btn' onclick='confirmEdit("${id}")'>Save</button>
-        </div>`;
-    }
+            const postRef = doc(db, `artifacts/${appId}/public/data/posts`, postId);
+            const newReply = {
+                authorId: currentUserId,
+                authorName: "Anonymous", // Could fetch a profile name if one existed
+                content: replyContent,
+                timestamp: Date.now()
+            };
+            await updateDoc(postRef, {
+                replies: arrayUnion(newReply)
+            });
+            hideModal();
+        }
 
-    window.confirmEdit = async (id) => {
-      const content = document.getElementById(`edit-${id}`).value;
-      const ref = doc(db, "posts", id);
-      await updateDoc(ref, { content });
-    }
+        window.showEditModal = (postId, content) => {
+            const decodedContent = decodeURIComponent(content);
+            const modalHTML = `
+                <h3 class="text-lg font-bold text-white mb-4">Edit Your Post</h3>
+                <textarea id="modal-textarea" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white" rows="6">${decodedContent}</textarea>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button onclick="hideModal()" class="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition">Cancel</button>
+                    <button onclick="confirmEdit('${postId}')" class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition">Save Changes</button>
+                </div>
+            `;
+            showModal(modalHTML);
+        }
 
-    window.showDelete = (id) => {
-      const box = document.getElementById(`confirm-${id}`);
-      box.innerHTML = `
-        <div class='confirm-box'>
-          <p>Delete this post?</p>
-          <button class='btn' onclick='confirmDelete("${id}")'>Yes</button>
-        </div>`;
-    }
+        window.confirmEdit = async (postId) => {
+            const newContent = document.getElementById('modal-textarea').value.trim();
+            if (!newContent) return;
+            const postRef = doc(db, `artifacts/${appId}/public/data/posts`, postId);
+            await updateDoc(postRef, { content: newContent });
+            hideModal();
+        }
 
-    window.confirmDelete = async (id) => {
-      await deleteDoc(doc(db, "posts", id));
-    }
-  </script>
+        window.showDeleteModal = (postId) => {
+            const content = `
+                <h3 class="text-lg font-bold text-white mb-4">Delete Post</h3>
+                <p class="text-gray-300">Are you sure you want to delete this post permanently? This action cannot be undone.</p>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button onclick="hideModal()" class="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition">Cancel</button>
+                    <button onclick="confirmDelete('${postId}')" class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold transition">Delete</button>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        window.confirmDelete = async (postId) => {
+            const postRef = doc(db, `artifacts/${appId}/public/data/posts`, postId);
+            await deleteDoc(postRef);
+            hideModal();
+        }
+
+        // --- Start the app ---
+        initializeFirebase();
+
+    </script>
 </body>
 </html>
