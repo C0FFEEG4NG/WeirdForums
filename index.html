@@ -58,15 +58,14 @@
         <header class="mb-6 text-center">
             <h1 class="text-4xl font-bold text-white">WeirdForums</h1>
             <p id="userInfo" class="text-sm text-gray-400 mt-2">Initializing...</p>
-            <!-- No auth actions needed here as it's anonymous-only -->
         </header>
 
         <!-- Post Creation Form -->
         <div id="postForm" class="bg-gray-800 p-5 rounded-lg shadow-lg mb-8">
             <h2 class="text-xl font-semibold text-white mb-4">Create a New Post</h2>
             <div class="space-y-4">
-                <!-- User can set their name, defaults to "Guest-XXXX" -->
-                <input type="text" id="posterName" placeholder="Your display name (e.g., 'CoolUser', 'Guest-1234')" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                <!-- User can set their name, defaults to a generated guest name -->
+                <input type="text" id="posterName" placeholder="Your display name" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
                 <textarea id="postContent" placeholder="What's on your mind?" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"></textarea>
                 <div class="flex items-center justify-between flex-wrap gap-4">
                     <input type="file" id="imageFile" accept="image/*" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
@@ -96,36 +95,33 @@
     <script type="module">
         // Import necessary Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // Removed email/password auth imports
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, query, runTransaction, arrayUnion, deleteDoc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, query, runTransaction, arrayUnion, deleteDoc, getDoc, setDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // --- Firebase Initialization and Auth ---
 
         // These global variables are provided by the environment.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'weirdforums-5b446';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'weirdforums-dev';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // This is a fallback config for local development.
             apiKey: "AIzaSyDbel92OjeP72VFFOtmatixYSlV6VFZA5U",
             authDomain: "weirdforums-5b446.firebaseapp.com",
             projectId: "weirdforums-5b446",
             storageBucket: "weirdforums-5b446.appspot.com",
             messagingSenderId: "866428774967",
-            appId: "1:866428774967:web:1f7cab540310cf8408edb2",
-            measurementId: "G-14LKNRQDMH"
+            appId: "1:866428774967:web:1f7cab540310cf8408edb2"
         };
-        // initialAuthToken is no longer used for anonymous sign-in
-        // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Removed this line as it's no longer used
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let app, auth, db, storage, postsCol;
-        let currentFirebaseUid = null; // Firebase's internal UID for the anonymous user
-        let currentUserId = null; // Our custom random ID for the user
+        let currentFirebaseUid = null; // Firebase's internal UID for the user
+        let currentUserId = null;      // Our custom, persistent, and unique ID for the user
         let currentUserDisplayName = "Anonymous"; // User's chosen display name
 
         // Get UI elements
         const posterNameInput = document.getElementById('posterName');
         const userInfoDisplay = document.getElementById('userInfo');
-        const postForm = document.getElementById('postForm'); // This will always be visible now
 
         // Initialize Firebase and set up authentication
         async function initializeFirebase() {
@@ -139,27 +135,30 @@
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
+                    // User is signed in.
                     currentFirebaseUid = user.uid;
                     await loadOrCreateUserSession(currentFirebaseUid); // Load or create custom user data
                     
-                    // Update UI based on the custom user data
-                    userInfoDisplay.innerHTML = `Logged in as: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserDisplayName}</span> (ID: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserId}</span>)`;
-                    
-                    // Set the posterName input with the current user's display name
+                    // Update UI with the user's session info
+                    userInfoDisplay.innerHTML = `Logged in as: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserDisplayName}</span> (ID: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserId.substring(0, 8)}...</span>)`;
                     posterNameInput.value = currentUserDisplayName;
 
-                    // Start listening for post updates
+                    // Start listening for post updates now that we have a user identity
                     listenForPosts();
                 } else {
-                    // User is signed out, attempt anonymous sign-in
-                    userInfoDisplay.innerText = 'Authenticating anonymously...';
+                    // User is signed out, attempt to sign in.
+                    userInfoDisplay.innerText = 'Authenticating...';
                     try {
-                        // Always sign in anonymously now, as custom token is not used for this flow
-                        await signInAnonymously(auth);
+                        // Use the provided token if available, otherwise sign in anonymously.
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
                     } catch (error) {
-                        console.error("Anonymous authentication failed:", error);
+                        console.error("Authentication failed:", error);
                         userInfoDisplay.innerText = 'Authentication failed. Please refresh.';
-                        showErrorModal("Anonymous authentication failed. Please check console for details.");
+                        showErrorModal("Authentication failed. Please check the console for details.");
                     }
                 }
             });
@@ -177,9 +176,11 @@
                     currentUserId = profileData.customId;
                     currentUserDisplayName = profileData.displayName;
                 } else {
-                    // User profile does not exist, create new
-                    const newCustomId = Math.floor(Math.random() * 9999) + 1; // Random ID 1-10000
-                    const newDisplayName = `Guest-${newCustomId}`;
+                    // User profile does not exist, create a new one
+                    // FIX: Use crypto.randomUUID() for a truly unique and persistent user ID.
+                    const newCustomId = crypto.randomUUID();
+                    const guestNumber = Math.floor(Math.random() * 9999) + 1;
+                    const newDisplayName = `Guest-${guestNumber}`;
 
                     await setDoc(userProfileRef, {
                         customId: newCustomId,
@@ -192,9 +193,9 @@
             } catch (error) {
                 console.error("Error loading/creating user session:", error);
                 showErrorModal("Failed to load user session. Some features may not work.");
-                // Fallback to a random ID if Firestore fails
-                currentUserId = Math.floor(Math.random() * 9999) + 1;
-                currentUserDisplayName = `Guest-${currentUserId}`;
+                // Fallback to a random ID if Firestore fails, to allow temporary usage
+                currentUserId = crypto.randomUUID();
+                currentUserDisplayName = `Guest-${Math.floor(Math.random() * 9999) + 1}`;
             }
         }
 
@@ -211,13 +212,13 @@
             const fileInput = document.getElementById("imageFile");
             const file = fileInput.files[0];
 
-            // Update user's display name if changed in the input field
+            // Update user's display name if they changed it in the input field
             if (name && name !== currentUserDisplayName) {
                 currentUserDisplayName = name;
                 const userProfileRef = doc(db, `artifacts/${appId}/users/${currentFirebaseUid}/profile`, 'userProfile');
                 try {
                     await updateDoc(userProfileRef, { displayName: name });
-                    userInfoDisplay.innerHTML = `Logged in as: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserDisplayName}</span> (ID: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserId}</span>)`;
+                    userInfoDisplay.innerHTML = `Logged in as: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserDisplayName}</span> (ID: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserId.substring(0, 8)}...</span>)`;
                 } catch (error) {
                     console.error("Failed to update display name:", error);
                 }
@@ -248,9 +249,7 @@
 
                 // Add post to Firestore
                 await addDoc(postsCol, {
-                    // Use our custom random ID for authorId
                     authorId: currentUserId,
-                    // Use the user's current display name
                     authorName: currentUserDisplayName, 
                     content: content,
                     imageUrl: imageUrl,
@@ -278,20 +277,20 @@
         // --- Post Rendering ---
 
         function listenForPosts() {
-            // Ensure postsCol is defined before querying
             if (!postsCol) {
                 console.error("Firestore posts collection not initialized.");
                 return;
             }
-            const q = query(collection(db, `artifacts/${appId}/public/data/posts`));
+            // FIX: Use orderBy to have Firestore sort the posts for us. This is much more efficient.
+            const q = query(postsCol, orderBy("timestamp", "desc"));
+            
             onSnapshot(q, (snapshot) => {
                 const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Sort by timestamp, newest first. Handle null timestamps during server write.
-                posts.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+                // FIX: Removed client-side sorting as Firestore now handles it.
                 renderPosts(posts);
             }, (error) => {
                 console.error("Error listening to posts:", error);
-                // Optionally show a user-friendly error message
+                document.getElementById("postsContainer").innerHTML = `<div class="text-center text-red-400 py-8">Error loading posts. Please check the console.</div>`;
             });
         }
 
@@ -311,15 +310,17 @@
                 postDiv.className = "bg-gray-800 p-5 rounded-lg shadow-lg";
                 postDiv.id = `post-${post.id}`;
 
-                // Check if the post's authorId matches the current user's customId
                 const isAuthor = post.authorId === currentUserId;
-                const hasLiked = post.likedBy.includes(currentUserId);
-                const hasDisliked = post.dislikedBy.includes(currentUserId);
+                const hasLiked = (post.likedBy || []).includes(currentUserId);
+                const hasDisliked = (post.dislikedBy || []).includes(currentUserId);
 
                 const likeBtnClass = hasLiked ? 'bg-indigo-500 text-white' : 'bg-gray-700 hover:bg-gray-600';
                 const dislikeBtnClass = hasDisliked ? 'bg-red-500 text-white' : 'bg-gray-700 hover:bg-gray-600';
 
                 const postDate = post.timestamp ? new Date(post.timestamp.toMillis()).toLocaleString() : 'Just now';
+                
+                // FIX: Sort replies by timestamp before rendering
+                const sortedReplies = (post.replies || []).sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
 
                 postDiv.innerHTML = `
                     <div class="flex items-start justify-between mb-3">
@@ -337,16 +338,16 @@
                     ${post.imageUrl ? `<img src="${post.imageUrl}" alt="User uploaded image" class="rounded-md max-w-full max-h-96 mx-auto my-4" onerror="this.style.display='none'"/>` : ""}
                     
                     <div class="flex items-center gap-2 flex-wrap border-t border-gray-700 pt-3 mt-3">
-                        <button onclick="toggleReaction('${post.id}', 'like')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full transition ${likeBtnClass}">👍 <span>${post.likedBy.length}</span></button>
-                        <button onclick="toggleReaction('${post.id}', 'dislike')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full transition ${dislikeBtnClass}">👎 <span>${post.dislikedBy.length}</span></button>
+                        <button onclick="toggleReaction('${post.id}', 'like')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full transition ${likeBtnClass}">👍 <span>${(post.likedBy || []).length}</span></button>
+                        <button onclick="toggleReaction('${post.id}', 'dislike')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full transition ${dislikeBtnClass}">👎 <span>${(post.dislikedBy || []).length}</span></button>
                         <button onclick="showReplyModal('${post.id}')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full bg-gray-700 hover:bg-gray-600 transition">💬 Reply</button>
                     </div>
 
                     <div id="replies-${post.id}" class="mt-4 space-y-3 pl-5 border-l-2 border-gray-700">
-                        ${(post.replies || []).map(r => `
+                        ${sortedReplies.map(r => `
                             <div class="bg-gray-900/50 p-3 rounded-md">
                                 <p class="text-sm text-gray-300 whitespace-pre-wrap">${r.content}</p>
-                                <p class="text-xs text-gray-500 mt-1">by ${r.authorName || 'Anonymous'} (${new Date(r.timestamp).toLocaleString()})</p>
+                                <p class="text-xs text-gray-500 mt-1">by ${r.authorName || 'Anonymous'} (${r.timestamp ? new Date(r.timestamp.toMillis()).toLocaleString() : 'Just now'})</p>
                             </div>
                         `).join("")}
                     </div>
@@ -387,7 +388,7 @@
                         } else {
                             newLikedBy.push(currentUserId); // Like
                             if (hasDisliked) {
-                                newDislikedBy = newDislikedBy.filter(id => id !== currentUserId); // Remove dislike if present
+                                newDislikedBy = newDislikedBy.filter(id => id !== currentUserId); // Remove dislike
                             }
                         }
                     } else if (reactionType === 'dislike') {
@@ -396,7 +397,7 @@
                         } else {
                             newDislikedBy.push(currentUserId); // Dislike
                             if (hasLiked) {
-                                newLikedBy = newLikedBy.filter(id => id !== currentUserId); // Remove like if present
+                                newLikedBy = newLikedBy.filter(id => id !== currentUserId); // Remove like
                             }
                         }
                     }
@@ -463,11 +464,9 @@
 
         window.confirmReply = async (postId) => {
             const replyContent = document.getElementById('modal-textarea').value.trim();
-            if (!replyContent) {
-                showErrorModal("Reply content cannot be empty.");
-                return;
-            }
-            if (!currentUserId) { // Double check auth status
+            if (!replyContent) return; // Don't show error for empty reply, just do nothing.
+            
+            if (!currentUserId) {
                 showErrorModal("User session not established. Please refresh the page.");
                 hideModal();
                 return;
@@ -476,9 +475,10 @@
             const postRef = doc(db, `artifacts/${appId}/public/data/posts`, postId);
             const newReply = {
                 authorId: currentUserId,
-                authorName: currentUserDisplayName, // Use the current user's display name
+                authorName: currentUserDisplayName,
                 content: replyContent,
-                timestamp: Date.now()
+                // FIX: Use serverTimestamp for accurate and consistent reply times.
+                timestamp: serverTimestamp() 
             };
             try {
                 await updateDoc(postRef, {
@@ -492,10 +492,6 @@
         }
 
         window.showEditModal = (postId, content) => {
-            if (!currentUserId) {
-                showErrorModal("User session not established. Please refresh the page.");
-                return;
-            }
             const decodedContent = decodeURIComponent(content);
             const modalHTML = `
                 <h3 class="text-lg font-bold text-white mb-4">Edit Your Post</h3>
@@ -514,11 +510,6 @@
                 showErrorModal("Post content cannot be empty.");
                 return;
             }
-            if (!currentUserId) { // Double check auth status
-                showErrorModal("User session not established. Please refresh the page.");
-                hideModal();
-                return;
-            }
             const postRef = doc(db, `artifacts/${appId}/public/data/posts`, postId);
             try {
                 await updateDoc(postRef, { content: newContent });
@@ -530,10 +521,6 @@
         }
 
         window.showDeleteModal = (postId) => {
-            if (!currentUserId) {
-                showErrorModal("User session not established. Please refresh the page.");
-                return;
-            }
             const content = `
                 <h3 class="text-lg font-bold text-white mb-4">Delete Post</h3>
                 <p class="text-gray-300">Are you sure you want to permanently delete this post? This action cannot be undone.</p>
@@ -546,11 +533,6 @@
         }
 
         window.confirmDelete = async (postId) => {
-            if (!currentUserId) { // Double check auth status
-                showErrorModal("User session not established. Please refresh the page.");
-                hideModal();
-                return;
-            }
             const postRef = doc(db, `artifacts/${appId}/public/data/posts`, postId);
             try {
                 await deleteDoc(postRef);
