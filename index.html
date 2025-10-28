@@ -3,91 +3,211 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WeirdForums - Thread-Based Forum</title>
-    <!-- Tailwind CSS for modern styling -->
+    <title>WEIRDFORUMS</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts: VT323 for retro style -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
-        /* Custom styles to complement Tailwind */
+        /* Custom styles based on the concept art */
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827; /* gray-900 */
-            color: #d1d5db; /* gray-300 */
+            font-family: 'VT323', monospace;
+            background-color: #301f1f; /* Dark brown */
+            color: #e6dccb; /* Cream/tan */
+            /* Disable all rounding */
+            --tw-border-radius: 0 !important;
         }
-        /* Style for the scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        
+        /* Main title */
+        h1 {
+            color: #e6dccb;
         }
-        ::-webkit-scrollbar-track {
-            background: #1f2937; /* gray-800 */
+
+        /* Horizontal lines */
+        hr {
+            border-color: #e6dccb;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #4b5563; /* gray-600 */
-            border-radius: 4px;
+
+        /* Inputs and Textareas */
+        input[type="text"],
+        textarea {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #e6dccb;
+            color: #e6dccb;
+            font-family: 'VT323', monospace;
+            font-size: 1.25rem; /* 20px */
+            border-radius: 0;
+            padding: 8px 0;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280; /* gray-500 */
+        input[type="text"]::placeholder,
+        textarea::placeholder {
+            color: #a19279; /* Darker tan for placeholder */
+            opacity: 1;
         }
-        /* Simple animation for modal */
-        .modal-enter {
-            animation: fadeIn 0.2s ease-out;
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-bottom-color: #ffffff;
+            box-shadow: none;
+            --tw-ring-shadow: none !important;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+
+        /* Buttons */
+        .btn,
+        button {
+            background-color: #4a542b; /* Dark olive/green */
+            color: #e6dccb;
+            padding: 8px 16px;
+            font-family: 'VT323', monospace;
+            font-size: 1.125rem; /* 18px */
+            cursor: pointer;
+            border: none;
+            border-radius: 0;
+            text-transform: uppercase;
+            transition: background-color 0.2s;
         }
-        /* Added for spinner animation */
-        .animate-spin {
-            animation: spin 1s linear infinite;
+        .btn:hover,
+        button:hover {
+            background-color: #5c683d; /* Lighter olive */
         }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .btn:disabled,
+        button:disabled {
+            background-color: #3e4425;
+            color: #a19279;
+            cursor: not-allowed;
+        }
+
+        /* Special button styles for reactions */
+        .btn-like {
+            background-color: #4a542b;
+        }
+        .btn-like.active {
+            background-color: #22c55e; /* green-500 */
+            color: #ffffff;
+        }
+        .btn-dislike {
+            background-color: #4a542b;
+        }
+        .btn-dislike.active {
+            background-color: #ef4444; /* red-500 */
+            color: #ffffff;
+        }
+        
+        /* Modal styles */
+        #modal {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        #modalContent {
+            background-color: #301f1f;
+            border: 4px solid #e6dccb;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        /* Remove all rounded corners from Tailwind classes */
+        .rounded-lg, .rounded-md, .rounded-full, .rounded {
+            border-radius: 0 !important;
+        }
+
+        /* Remove all shadows from Tailwind classes */
+        .shadow-lg, .shadow-md, .shadow-2xl, .shadow {
+            box-shadow: none !important;
+        }
+        
+        /* Style for file input */
+        .file-label {
+            color: #a19279;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 1.125rem; /* 18px */
+        }
+        .file-label:hover {
+            color: #e6dccb;
+        }
+        
+        /* Style for links */
+        a, .link {
+            color: #e6dccb;
+            text-decoration: underline;
+        }
+        a:hover, .link:hover {
+            color: #ffffff;
         }
     </style>
 </head>
 <body class="antialiased">
 
     <!-- Main Container -->
-    <div class="container mx-auto max-w-3xl p-4">
+    <div class="container mx-auto max-w-4xl p-4">
 
         <!-- Header -->
-        <header class="mb-6 text-center">
-            <h1 class="text-4xl font-bold text-white">WeirdForums</h1>
-            <p id="userInfo" class="text-sm text-gray-400 mt-2">Initializing...</p>
-            <button id="updateLogButton" onclick="showUpdateLog()" class="mt-2 text-sm text-indigo-400 hover:underline">View Update Log</button>
+        <header class="mb-4">
+            <div class="flex justify-between items-center text-lg">
+                <!-- Patch Notes Button -->
+                <button id="updateLogButton" onclick="showUpdateLog()">Patch Notes</button>
+                
+                <!-- Title -->
+                <h1 class="text-5xl font-bold text-center">WEIRDFORUMS</h1>
+                
+                <!-- Report a Bug Button -->
+                <button id="reportBugButton" onclick="showReportBugModal()" class="flex items-center gap-2">
+                    <!-- Simple SVG Bug Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="bevel">
+                        <path d="M20 9V7a2 2 0 0 0-2-2h-2.5a1 1 0 0 1-1-1.5A2.5 2.5 0 0 0 12 2a2.5 2.5 0 0 0-2.5 1.5A1 1 0 0 1 8.5 5H6a2 2 0 0 0-2 2v2"/>
+                        <path d="M12 11h.01"/>
+                        <path d="m15 14-1 3"/>
+                        <path d="m9 14 1 3"/>
+                        <path d="M4 14h16"/>
+                        <path d="M17 22h-1a3 3 0 0 1-3-3v-3h-2v3a3 3 0 0 1-3 3H7"/>
+                        <path d="M4 18v-4"/>
+                        <path d="M20 18v-4"/>
+                    </svg>
+                    Report a bug
+                </button>
+            </div>
+            <hr class="my-4"/>
         </header>
 
         <!-- Thread Creation Form -->
-        <div id="threadForm" class="bg-gray-800 p-5 rounded-lg shadow-lg mb-8">
-            <h2 class="text-xl font-semibold text-white mb-4">Start a New Thread</h2>
-            <div class="space-y-4">
-                <!-- User can set their name, defaults to a generated guest name -->
-                <input type="text" id="posterName" placeholder="Your display name" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
-                <input type="text" id="threadTitle" placeholder="Thread Title" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
-                <textarea id="threadContent" placeholder="What's on your mind?" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"></textarea>
-                <div class="flex items-center justify-between flex-wrap gap-4">
-                    <input type="file" id="imageFile" accept="image/*" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
-                    <button id="threadSubmitButton" onclick="createThread()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:scale-100">
-                        <span id="threadSubmitSpinner" class="hidden animate-spin mr-2">🌀</span>
-                        <span id="threadSubmitText">Post Thread</span>
+        <div id="threadForm" class="my-10 text-center">
+            <div class="space-y-6 max-w-lg mx-auto">
+                <h2 class="text-3xl">Start a New Thread</h2>
+                <input type="text" id="threadTitle" placeholder="Thread Title..." class="w-full text-center text-2xl">
+                <textarea id="threadContent" placeholder="What's on your mind?..." rows="4" class="w-full text-lg"></textarea>
+                <div class="flex items-center justify-center gap-8">
+                    <!-- Simple File Input -->
+                    <label for="imageFile" class="file-label">
+                        Attach Image
+                    </label>
+                    <input type="file" id="imageFile" accept="image/*" class="hidden">
+                    
+                    <button id="threadSubmitButton" onclick="createThread()">
+                        <span id="threadSubmitSpinner" class="hidden">...</span>
+                        <span id="threadSubmitText">Start Thread</span>
                     </button>
                 </div>
             </div>
         </div>
 
+        <!-- Threads Header -->
+        <div class="flex justify-between items-end mb-4">
+             <h2 class="text-4xl">Threads</h2>
+             <p id="userInfo" class="text-lg text-main/80">Initializing...</p>
+        </div>
+        <hr class="my-4"/>
+
         <!-- Threads Container -->
-        <div id="threadsContainer" class="space-y-6">
+        <div id="threadsContainer" class="space-y-1">
             <!-- Threads will be dynamically inserted here -->
         </div>
     </div>
 
     <!-- Universal Modal -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
-        <div id="modalContent" class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md modal-enter">
+        <div id="modalContent" class="p-6 w-full max-w-md">
             <!-- Modal content will be dynamically inserted here -->
         </div>
     </div>
@@ -116,13 +236,12 @@
         };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        let app, auth, db, storage, threadsCol;
+        let app, auth, db, storage, threadsCol, bugReportsCol;
         let currentFirebaseUid = null; // Firebase's internal UID for the user
         let currentUserId = null;      // Our custom, persistent, and unique ID for the user
         let currentUserDisplayName = "Anonymous"; // User's chosen display name
 
         // Get UI elements
-        const posterNameInput = document.getElementById('posterName');
         const userInfoDisplay = document.getElementById('userInfo');
 
         // Initialize Firebase and set up authentication
@@ -132,8 +251,9 @@
             db = getFirestore(app);
             storage = getStorage(app);
             
-            // Use a 'threads' collection for clarity in the new structure
+            // Define collections
             threadsCol = collection(db, `artifacts/${appId}/public/data/threads`);
+            bugReportsCol = collection(db, `artifacts/${appId}/public/data/bug_reports`);
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -142,8 +262,7 @@
                     await loadOrCreateUserSession(currentFirebaseUid); // Load or create custom user data
                     
                     // Update UI with the user's session info
-                    userInfoDisplay.innerHTML = `Logged in as: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserDisplayName}</span> (ID: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserId.substring(0, 8)}...</span>)`;
-                    posterNameInput.value = currentUserDisplayName;
+                    userInfoDisplay.innerHTML = `User: ${currentUserDisplayName} (ID: ${currentUserId.substring(0, 6)})`;
 
                     // Start listening for thread updates now that we have a user identity
                     listenForThreads();
@@ -159,7 +278,7 @@
                         }
                     } catch (error) {
                         console.error("Authentication failed:", error);
-                        userInfoDisplay.innerText = 'Authentication failed. Please refresh.';
+                        userInfoDisplay.innerText = 'Auth Failed. Refresh.';
                         showErrorModal("Authentication failed. Please check the console for details.");
                     }
                 }
@@ -207,24 +326,15 @@
                 showErrorModal("User session not established. Please refresh the page.");
                 return;
             }
-
-            const name = posterNameInput.value.trim();
+            
+            // Get data from form
             const title = document.getElementById("threadTitle").value.trim();
             const content = document.getElementById("threadContent").value.trim();
             const fileInput = document.getElementById("imageFile");
             const file = fileInput.files[0];
-
-            // Update user's display name if they changed it in the input field
-            if (name && name !== currentUserDisplayName) {
-                currentUserDisplayName = name;
-                const userProfileRef = doc(db, `artifacts/${appId}/users/${currentFirebaseUid}/profile`, 'userProfile');
-                try {
-                    await updateDoc(userProfileRef, { displayName: name });
-                    userInfoDisplay.innerHTML = `Logged in as: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserDisplayName}</span> (ID: <span class="font-mono bg-gray-700 px-2 py-1 rounded">${currentUserId.substring(0, 8)}...</span>)`;
-                } catch (error) {
-                    console.error("Failed to update display name:", error);
-                }
-            }
+            
+            // Use the stored display name
+            const name = currentUserDisplayName;
             
             if (!title || !content) {
                 showErrorModal("Thread title and content cannot be empty.");
@@ -235,7 +345,7 @@
             const spinner = document.getElementById("threadSubmitSpinner");
             const buttonText = document.getElementById("threadSubmitText");
 
-            // Disable button and show spinner
+            // Disable button and show status
             submitButton.disabled = true;
             spinner.classList.remove('hidden');
             buttonText.innerText = 'Posting...';
@@ -252,7 +362,7 @@
                 // Add thread to Firestore
                 await addDoc(threadsCol, {
                     authorId: currentUserId,
-                    authorName: currentUserDisplayName,
+                    authorName: name,
                     title: title,
                     content: content,
                     imageUrl: imageUrl,
@@ -262,7 +372,7 @@
                     replies: []
                 });
 
-                // Clear form fields, but keep posterName for user convenience
+                // Clear form fields
                 document.getElementById("threadTitle").value = "";
                 document.getElementById("threadContent").value = "";
                 fileInput.value = "";
@@ -271,10 +381,10 @@
                 console.error("Error creating thread:", error);
                 showErrorModal("Failed to create thread. Please check the console for details and ensure your Firebase security rules allow writes.");
             } finally {
-                // Re-enable button and hide spinner
+                // Re-enable button and hide status
                 submitButton.disabled = false;
                 spinner.classList.add('hidden');
-                buttonText.innerText = 'Post Thread';
+                buttonText.innerText = 'Start Thread';
             }
         };
 
@@ -285,18 +395,17 @@
                 console.error("Firestore threads collection not initialized.");
                 return;
             }
-            // FIX: Removed orderBy from the query to prevent index-related errors.
-            // We will sort the threads on the client-side after fetching.
+            // We sort the threads on the client-side after fetching.
             const q = query(threadsCol);
             
             onSnapshot(q, (snapshot) => {
                 const threads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // FIX: Sort threads by timestamp client-side for reliability. Newest first.
+                // Sort threads by timestamp client-side. Newest first.
                 threads.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
                 renderThreads(threads);
             }, (error) => {
                 console.error("Error listening to threads:", error);
-                document.getElementById("threadsContainer").innerHTML = `<div class="text-center text-red-400 py-8">Error loading threads. Please check the console. It might be a Firestore security rule or index issue.</div>`;
+                document.getElementById("threadsContainer").innerHTML = `<div class="text-center text-red-400 py-8">Error loading threads. Please check the console.</div>`;
             });
         }
 
@@ -305,7 +414,7 @@
             container.innerHTML = ""; // Clear existing threads
 
             if (threads.length === 0) {
-                container.innerHTML = `<div class="text-center text-gray-400 py-8">No threads yet. Be the first!</div>`;
+                container.innerHTML = `<div class="text-center text-main/80 py-8 text-2xl">No threads yet. Be the first!</div>`;
                 return;
             }
 
@@ -313,59 +422,82 @@
                 if (!thread.content) return; // Skip threads with no content
 
                 const threadDiv = document.createElement("div");
-                threadDiv.className = "bg-gray-800 p-5 rounded-lg shadow-lg";
+                threadDiv.className = "py-4 border-b border-main/30";
                 threadDiv.id = `thread-${thread.id}`;
 
-                const isAuthor = thread.authorId === currentUserId;
-                const hasLiked = (thread.likedBy || []).includes(currentUserId);
-                const hasDisliked = (thread.dislikedBy || []).includes(currentUserId);
-
-                const likeBtnClass = hasLiked ? 'bg-indigo-500 text-white' : 'bg-gray-700 hover:bg-gray-600';
-                const dislikeBtnClass = hasDisliked ? 'bg-red-500 text-white' : 'bg-gray-700 hover:bg-gray-600';
-
                 const threadDate = thread.timestamp ? new Date(thread.timestamp.toMillis()).toLocaleString() : 'Just now';
+                const replyCount = (thread.replies || []).length;
+                const likeCount = (thread.likedBy || []).length;
+                const dislikeCount = (thread.dislikedBy || []).length;
+                const isAuthor = thread.authorId === currentUserId;
                 
                 // Sort replies by timestamp before rendering
                 const sortedReplies = (thread.replies || []).sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
 
+                const hasLiked = (thread.likedBy || []).includes(currentUserId);
+                const hasDisliked = (thread.dislikedBy || []).includes(currentUserId);
+                const likeBtnClass = hasLiked ? 'btn-like active' : 'btn-like';
+                const dislikeBtnClass = hasDisliked ? 'btn-dislike active' : 'btn-dislike';
+
                 threadDiv.innerHTML = `
-                    <div class="flex items-start justify-between mb-3">
+                    <!-- Thread Header (Clickable to Toggle) -->
+                    <div class="flex justify-between items-start cursor-pointer group" onclick="toggleThreadContent('thread-content-${thread.id}')">
                         <div>
-                            <h3 class="text-xl font-bold text-indigo-400 mb-1">${thread.title}</h3>
-                            <p class="text-sm text-gray-300">by <strong class="text-white">${thread.authorName}</strong></p>
-                            <p class="text-xs text-gray-400">${threadDate}</p>
+                            <h3 class="text-2xl group-hover:text-white">${thread.title}</h3>
+                            <p class="text-lg text-main/70">by ${thread.authorName} - ${threadDate}</p>
                         </div>
-                        ${isAuthor ? `
-                        <div class="flex items-center gap-2">
-                            <button onclick="showEditModal('${thread.id}', \`${encodeURIComponent(thread.content)}\`, \`${encodeURIComponent(thread.title)}\`)" class="text-gray-400 hover:text-white transition">✏️</button>
-                            <button onclick="showDeleteModal('${thread.id}')" class="text-gray-400 hover:text-white transition">🗑️</button>
-                        </div>` : ''}
-                    </div>
-                    <p class="text-gray-300 my-4 whitespace-pre-wrap">${thread.content}</p>
-                    ${thread.imageUrl ? `<img src="${thread.imageUrl}" alt="User uploaded image" class="rounded-md max-w-full max-h-96 mx-auto my-4" onerror="this.style.display='none'"/>` : ""}
-                    
-                    <div class="flex items-center gap-2 flex-wrap border-t border-gray-700 pt-3 mt-3">
-                        <button onclick="toggleReaction('${thread.id}', 'like')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full transition ${likeBtnClass}">👍 <span>${(thread.likedBy || []).length}</span></button>
-                        <button onclick="toggleReaction('${thread.id}', 'dislike')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full transition ${dislikeBtnClass}">👎 <span>${(thread.dislikedBy || []).length}</span></button>
-                        <button onclick="showReplyModal('${thread.id}')" class="flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full bg-gray-700 hover:bg-gray-600 transition">💬 Reply</button>
+                        <div class="text-right flex-shrink-0 ml-4">
+                            <p class="text-xl">Msg: ${replyCount}</p>
+                            <div class="flex gap-3 justify-end mt-1 text-lg">
+                                <span class="text-green-400">👍 ${likeCount}</span>
+                                <span class="text-red-400">👎 ${dislikeCount}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="replies-${thread.id}" class="mt-4 space-y-3 pl-5 border-l-2 border-gray-700">
-                        ${sortedReplies.map(r => `
-                            <div class="bg-gray-900/50 p-3 rounded-md">
-                                <p class="text-sm text-gray-300 whitespace-pre-wrap">${r.content}</p>
-                                <p class="text-xs text-gray-500 mt-1">by ${r.authorName || 'Anonymous'} (${r.timestamp ? new Date(r.timestamp.toMillis()).toLocaleString() : 'Just now'})</p>
-                            </div>
-                        `).join("")}
+                    <!-- Thread Content (Hidden by default) -->
+                    <div id="thread-content-${thread.id}" class="hidden mt-4 pl-5 border-l-2 border-main/50">
+                        <p class="text-lg whitespace-pre-wrap my-4">${thread.content}</p>
+                        ${thread.imageUrl ? `<img src="${thread.imageUrl}" alt="User uploaded image" class="max-w-full max-h-96 my-4" onerror="this.style.display='none'"/>` : ""}
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex items-center gap-3 flex-wrap pt-3 mt-3">
+                            <button onclick="toggleReaction(event, '${thread.id}', 'like')" class="px-3 py-1 ${likeBtnClass}">👍</button>
+                            <button onclick="toggleReaction(event, '${thread.id}', 'dislike')" class="px-3 py-1 ${dislikeBtnClass}">👎</button>
+                            <button onclick="showReplyModal(event, '${thread.id}')" class="px-3 py-1">Reply</button>
+                            ${isAuthor ? `
+                            <button onclick="showEditModal(event, '${thread.id}', \`${encodeURIComponent(thread.content)}\`, \`${encodeURIComponent(thread.title)}\`)" class="px-3 py-1">✏️ Edit</button>
+                            <button onclick="showDeleteModal(event, '${thread.id}')" class="px-3 py-1">🗑️ Delete</button>
+                            ` : ''}
+                        </div>
+
+                        <!-- Replies -->
+                        <div id="replies-${thread.id}" class="mt-4 space-y-3">
+                            ${sortedReplies.map(r => `
+                                <div class="bg-black/20 p-3">
+                                    <p class="text-lg whitespace-pre-wrap">${r.content}</p>
+                                    <p class="text-sm text-main/60 mt-1">by ${r.authorName || 'Anonymous'} (${r.timestamp ? new Date(r.timestamp.toMillis()).toLocaleString() : 'Just now'})</p>
+                                </div>
+                            `).join("")}
+                        </div>
                     </div>
                 `;
                 container.appendChild(threadDiv);
             });
         }
+        
+        // --- Toggle Thread Visibility ---
+        window.toggleThreadContent = (id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.toggle('hidden');
+            }
+        }
 
         // --- Thread Actions (Like, Dislike) ---
         
-        window.toggleReaction = async (threadId, reactionType) => {
+        window.toggleReaction = async (event, threadId, reactionType) => {
+            event.stopPropagation(); // Prevent thread from collapsing
             if (!currentUserId) {
                 showErrorModal("You must be logged in to react. Please refresh the page.");
                 return;
@@ -427,7 +559,7 @@
             modal.classList.remove('hidden');
         }
 
-        function hideModal() {
+        window.hideModal = () => {
             modal.classList.add('hidden');
             modalContent.innerHTML = '';
         }
@@ -442,10 +574,10 @@
         // --- Error Modal ---
         window.showErrorModal = (message) => {
             const content = `
-                <h3 class="text-lg font-bold text-red-500 mb-4">An Error Occurred</h3>
-                <p class="text-gray-300">${message}</p>
+                <h3 class="text-2xl font-bold text-red-500 mb-4">Error</h3>
+                <p class="text-lg">${message}</p>
                 <div class="flex justify-end gap-3 mt-6">
-                    <button onclick="hideModal()" class="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition">Close</button>
+                    <button onclick="hideModal()">Close</button>
                 </div>
             `;
             showModal(content);
@@ -454,37 +586,93 @@
         // --- Update Log Modal ---
         window.showUpdateLog = () => {
             const content = `
-                <h3 class="text-lg font-bold text-white mb-4">Update Log</h3>
-                <div class="space-y-4 text-gray-300">
+                <h3 class="text-2xl font-bold mb-4">Update Log</h3>
+                <div class="space-y-4 text-lg">
                     <div>
-                        <p class="font-semibold text-indigo-400">August 23, 2025 - Winnipeg, MB</p>
+                        <p class="font-bold text-white">Oct 28, 2025 - Winnipeg, MB</p>
+                        <ul class="list-disc list-inside mt-1">
+                            <li>New design.</li>
+                            <li>Added "Report a bug" button.</li>
+                            <li>Firebase Working, you can post threads</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-bold text-white">Aug 23, 2025 - Winnipeg, MB</p>
                         <ul class="list-disc list-inside text-sm mt-1">
-                            <li>Added this update log!</li>
-                            <li>Fixed an issue preventing new threads from appearing.</li>
-                            <li>Converted the forum from a single post feed to a thread-based system.</li>
+                            <li>Went offline.</li>
                         </ul>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
-                    <button onclick="hideModal()" class="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition">Close</button>
+                    <button onclick="hideModal()">Close</button>
                 </div>
             `;
             showModal(content);
         }
+        
+        // --- Report Bug Modal ---
+        window.showReportBugModal = () => {
+            const content = `
+                <h3 class="text-2xl font-bold mb-4">Report a Bug</h3>
+                <p class="text-lg mb-2">Found an issue? Let us know!</p>
+                <p class="text-sm text-main/70 mb-4">Your User ID: ${currentUserId}</p>
+                <textarea id="modal-bug-textarea" class="w-full text-lg" rows="5" placeholder="Describe the bug..."></textarea>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button onclick="hideModal()">Cancel</button>
+                    <button id="confirmBugReportBtn" onclick="confirmBugReport()">Send Report</button>
+                </div>
+            `;
+            showModal(content);
+        }
+        
+        window.confirmBugReport = async () => {
+            const bugContent = document.getElementById('modal-bug-textarea').value.trim();
+            if (!bugContent) return;
+            
+            const reportButton = document.getElementById('confirmBugReportBtn');
+            reportButton.disabled = true;
+            reportButton.innerText = "Sending...";
+
+            try {
+                await addDoc(bugReportsCol, {
+                    userId: currentUserId,
+                    userName: currentUserDisplayName,
+                    report: bugContent,
+                    timestamp: serverTimestamp(),
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                });
+                hideModal();
+                // Show a simple confirmation
+                showModal(`
+                    <h3 class="text-2xl font-bold mb-4">Report Sent</h3>
+                    <p class="text-lg">Thanks for your help!</p>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button onclick="hideModal()">Close</button>
+                    </div>
+                `);
+            } catch (error) {
+                console.error("Error sending bug report:", error);
+                showErrorModal("Could not send report. Please try again.");
+                reportButton.disabled = false;
+                reportButton.innerText = "Send Report";
+            }
+        }
 
         // --- Modal Actions (Reply, Edit, Delete) ---
 
-        window.showReplyModal = (threadId) => {
+        window.showReplyModal = (event, threadId) => {
+            event.stopPropagation();
             if (!currentUserId) {
                 showErrorModal("User session not established. Please refresh the page.");
                 return;
             }
             const content = `
-                <h3 class="text-lg font-bold text-white mb-4">Post a Reply</h3>
-                <textarea id="modal-textarea" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="4" placeholder="Your reply..."></textarea>
+                <h3 class="text-2xl font-bold mb-4">Post a Reply</h3>
+                <textarea id="modal-textarea" class="w-full text-lg" rows="4" placeholder="Your reply..."></textarea>
                 <div class="flex justify-end gap-3 mt-4">
-                    <button onclick="hideModal()" class="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition">Cancel</button>
-                    <button onclick="confirmReply('${threadId}')" class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition">Send</button>
+                    <button onclick="hideModal()">Cancel</button>
+                    <button onclick="confirmReply('${threadId}')">Send</button>
                 </div>
             `;
             showModal(content);
@@ -492,7 +680,7 @@
 
         window.confirmReply = async (threadId) => {
             const replyContent = document.getElementById('modal-textarea').value.trim();
-            if (!replyContent) return; // Don't show error for empty reply, just do nothing.
+            if (!replyContent) return; 
             
             if (!currentUserId) {
                 showErrorModal("User session not established. Please refresh the page.");
@@ -518,16 +706,17 @@
             }
         }
 
-        window.showEditModal = (threadId, content, title) => {
+        window.showEditModal = (event, threadId, content, title) => {
+            event.stopPropagation();
             const decodedContent = decodeURIComponent(content);
             const decodedTitle = decodeURIComponent(title);
             const modalHTML = `
-                <h3 class="text-lg font-bold text-white mb-4">Edit Your Thread</h3>
-                <input id="modal-title-input" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white mb-4" value="${decodedTitle}">
-                <textarea id="modal-textarea" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white" rows="6">${decodedContent}</textarea>
+                <h3 class="text-2xl font-bold mb-4">Edit Your Thread</h3>
+                <input id="modal-title-input" class="w-full text-lg mb-4" value="${decodedTitle}">
+                <textarea id="modal-textarea" class="w-full text-lg" rows="6">${decodedContent}</textarea>
                 <div class="flex justify-end gap-3 mt-4">
-                    <button onclick="hideModal()" class="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition">Cancel</button>
-                    <button onclick="confirmEdit('${threadId}')" class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition">Save Changes</button>
+                    <button onclick="hideModal()">Cancel</button>
+                    <button onclick="confirmEdit('${threadId}')">Save Changes</button>
                 </div>
             `;
             showModal(modalHTML);
@@ -544,20 +733,20 @@
             try {
                 await updateDoc(threadRef, { content: newContent, title: newTitle });
                 hideModal();
-            } catch (error)
- {
+            } catch (error) {
                 console.error("Error updating thread:", error);
                 showErrorModal("Failed to update thread. Please try again.");
             }
         }
 
-        window.showDeleteModal = (threadId) => {
+        window.showDeleteModal = (event, threadId) => {
+            event.stopPropagation();
             const content = `
-                <h3 class="text-lg font-bold text-white mb-4">Delete Thread</h3>
-                <p class="text-gray-300">Are you sure you want to permanently delete this thread and all its replies? This action cannot be undone.</p>
+                <h3 class="text-2xl font-bold mb-4">Delete Thread</h3>
+                <p class="text-lg">Are you sure you want to permanently delete this thread and all its replies?</p>
                 <div class="flex justify-end gap-3 mt-6">
-                    <button onclick="hideModal()" class="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition">Cancel</button>
-                    <button onclick="confirmDelete('${threadId}')" class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold transition">Delete</button>
+                    <button onclick="hideModal()">Cancel</button>
+                    <button onclick="confirmDelete('${threadId}')" style="background-color: #ef4444; color: white;">Delete</button>
                 </div>
             `;
             showModal(content);
